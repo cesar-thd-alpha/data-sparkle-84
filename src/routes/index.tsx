@@ -123,17 +123,22 @@ function Dashboard() {
   );
 
   const porCategoria = useMemo(() => {
-    const map = new Map<string, Record<string, number> & { name: string }>();
+    type Row = { name: string; "No Alvo": number; Fora: number; "Sem Dado": number; Avaliar: number };
+    const map = new Map<string, Row>();
     filtered.forEach((d) => {
       const k = d.categoria || "—";
-      const cur = map.get(k) ?? { name: k, "No Alvo": 0, Fora: 0, "Sem Dado": 0, Avaliar: 0 };
-      const s = d.status || "Sem Dado";
-      cur[s] = (cur[s] ?? 0) + 1;
+      const cur: Row =
+        map.get(k) ?? { name: k, "No Alvo": 0, Fora: 0, "Sem Dado": 0, Avaliar: 0 };
+      const s = (d.status || "Sem Dado") as keyof Omit<Row, "name">;
+      if (s === "No Alvo" || s === "Fora" || s === "Sem Dado" || s === "Avaliar") {
+        cur[s] += 1;
+      }
       map.set(k, cur);
     });
-    return Array.from(map.values()).sort((a, b) =>
-      (b["No Alvo"] + b.Fora + b["Sem Dado"] + b.Avaliar) -
-      (a["No Alvo"] + a.Fora + a["Sem Dado"] + a.Avaliar),
+    return Array.from(map.values()).sort(
+      (a, b) =>
+        b["No Alvo"] + b.Fora + b["Sem Dado"] + b.Avaliar -
+        (a["No Alvo"] + a.Fora + a["Sem Dado"] + a.Avaliar),
     );
   }, [filtered]);
 
