@@ -1,17 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { Pool } from "pg";
-
-let _pool: Pool | null = null;
-function pool() {
-  if (!_pool) {
-    _pool = new Pool({
-      connectionString: process.env.RAILWAY_DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      max: 3,
-    });
-  }
-  return _pool;
-}
+import { Client } from "pg";
 
 export type Metric = {
   id: number;
@@ -32,14 +20,34 @@ export type Metric = {
 };
 
 export const getMetrics = createServerFn({ method: "GET" }).handler(async (): Promise<Metric[]> => {
-  const { rows } = await pool().query(`
-    SELECT "IdMetrica","Responsável","Métrica","Cadência","Meta","Alvo (nº)","Dir.",
-           "Realizado","Status","PossuiMeta","TipoMeta","StatusOrdem","Categoria",
-           "Realizado_Num","ScoreMeta"
-    FROM performance_metricas
-    ORDER BY "IdMetrica"
-  `);
-  return rows.map((r) => ({
+  const connectionString = process.env.RAILWAY_DATABASE_URL;
+  if (!connectionString) throw new Error("RAILWAY_DATABASE_URL not set");
+
+  async function run(ssl: false | { rejectUnauthorized: false }) {
+    const client = new Client({ connectionString, ssl, keepAlive: false });
+    await client.connect();
+    try {
+      return await client.query(`
+        SELECT "IdMetrica","Responsável","Métrica","Cadência","Meta","Alvo (nº)","Dir.",
+               "Realizado","Status","PossuiMeta","TipoMeta","StatusOrdem","Categoria",
+               "Realizado_Num","ScoreMeta"
+        FROM performance_metricas
+        ORDER BY "IdMetrica"
+      `);
+    } finally {
+      await client.end().catch(() => {});
+    }
+  }
+
+  let result;
+  try {
+    result = await run({ rejectUnauthorized: false });
+  } catch (e) {
+    console.warn("[getMetrics] SSL connect failed, retrying without SSL:", (e as Error).message);
+    result = await run(false);
+  }
+
+  return result.rows.map((r) => ({
     id: Number(r.IdMetrica),
     responsavel: r["Responsável"],
     metrica: r["Métrica"],
