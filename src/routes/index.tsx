@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -163,11 +164,21 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-card">
-        <div className="mx-auto max-w-[1400px] px-6 py-5">
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard de Performance</h1>
-          <p className="text-sm text-muted-foreground">
-            Acompanhamento de metas por responsável, categoria e cadência.
-          </p>
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Dashboard de Performance</h1>
+            <p className="text-sm text-muted-foreground">
+              Acompanhamento de metas por responsável, categoria e cadência.
+            </p>
+          </div>
+          <nav className="flex gap-2">
+            <Link to="/">
+              <Button variant="secondary" size="sm">Performance</Button>
+            </Link>
+            <Link to="/carteira">
+              <Button variant="ghost" size="sm">Carteira</Button>
+            </Link>
+          </nav>
         </div>
       </header>
 
