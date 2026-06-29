@@ -421,7 +421,7 @@ function CarteiraPage() {
   );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
+function Kpi({ label, value, accent }: { label: string; value: React.ReactNode; accent?: string }) {
   return (
     <Card>
       <CardContent className="pt-5">
@@ -458,7 +458,7 @@ function SortableHead({
 }: {
   label: string;
   k: SortKey;
-  sortKey: SortKey;
+  sortKey: SortKey | null;
   sortDir: "asc" | "desc";
   onClick: (k: SortKey) => void;
   align?: "right";
