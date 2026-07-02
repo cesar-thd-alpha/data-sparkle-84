@@ -4,16 +4,15 @@ import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
+  PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, ComposedChart,
 } from "recharts";
-import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown } from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -40,8 +39,6 @@ export const Route = createFileRoute("/")({
   notFoundComponent: () => <div className="p-8">Sem dados.</div>,
   component: CarteiraDashboard,
 });
-
-const ALL = "__all__";
 
 const STATUS_COLORS: Record<string, string> = {
   Ativo: "oklch(0.7 0.18 145)",
@@ -81,12 +78,12 @@ type SortKey =
 function CarteiraDashboard() {
   const { data } = useSuspenseQuery(clientesQuery);
 
-  const [profitFilter, setProfitFilter] = useState(ALL);
-  const [franquiaFilter, setFranquiaFilter] = useState(ALL);
-  const [statusFilter, setStatusFilter] = useState(ALL);
-  const [planoFilter, setPlanoFilter] = useState(ALL);
-  const [tipoFilter, setTipoFilter] = useState(ALL);
-  const [faixaFilter, setFaixaFilter] = useState(ALL);
+  const [profitFilter, setProfitFilter] = useState<string[]>([]);
+  const [franquiaFilter, setFranquiaFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [planoFilter, setPlanoFilter] = useState<string[]>([]);
+  const [tipoFilter, setTipoFilter] = useState<string[]>([]);
+  const [faixaFilter, setFaixaFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -103,19 +100,18 @@ function CarteiraDashboard() {
     };
   }, [data]);
 
-  const filtered = useMemo(
-    () =>
-      data.filter(
-        (d) =>
-          (profitFilter === ALL || d.profit === profitFilter) &&
-          (franquiaFilter === ALL || d.franquia === franquiaFilter) &&
-          (statusFilter === ALL || d.status === statusFilter) &&
-          (planoFilter === ALL || d.plano === planoFilter) &&
-          (tipoFilter === ALL || d.tipoContrato === tipoFilter) &&
-          (faixaFilter === ALL || d.faixaVencimento === faixaFilter),
-      ),
-    [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter],
-  );
+  const filtered = useMemo(() => {
+    const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
+    return data.filter(
+      (d) =>
+        match(profitFilter, d.profit) &&
+        match(franquiaFilter, d.franquia) &&
+        match(statusFilter, d.status) &&
+        match(planoFilter, d.plano) &&
+        match(tipoFilter, d.tipoContrato) &&
+        match(faixaFilter, d.faixaVencimento),
+    );
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter]);
 
   // KPIs
   const totalClientes = filtered.length;
@@ -207,6 +203,87 @@ function CarteiraDashboard() {
       .map((name) => ({ name, value: map.get(name) ?? 0 }));
   }, [filtered]);
 
+  // Séries temporais mensais
+  const timeSeries = useMemo(() => {
+    type Point = {
+      key: string;
+      label: string;
+      clientesTotal: number;
+      mrrTotal: number;
+      recebidos: number;
+      perdidos: number;
+    };
+    const monthKey = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+    const withStart = filtered
+      .map((d) => ({
+        start: d.inicioContrato ? new Date(d.inicioContrato) : null,
+        end: d.fimContrato ? new Date(d.fimContrato) : null,
+        churn: d.churn,
+        mrr: d.valorMensal ?? 0,
+      }))
+      .filter((d) => d.start && !isNaN(d.start.getTime()));
+
+    if (withStart.length === 0) return [] as Point[];
+
+    const minStart = new Date(
+      Math.min(...withStart.map((d) => (d.start as Date).getTime())),
+    );
+    const maxEnd = withStart.reduce((max, d) => {
+      const t = d.end && !isNaN(d.end.getTime()) ? d.end.getTime() : 0;
+      return t > max ? t : max;
+    }, 0);
+    const now = new Date();
+    const endBound = new Date(Math.max(now.getTime(), maxEnd));
+
+    const points: Point[] = [];
+    let y = minStart.getUTCFullYear();
+    let m = minStart.getUTCMonth();
+    while (y < endBound.getUTCFullYear() || (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())) {
+      const eom = monthEnd(y, m);
+      const som = new Date(Date.UTC(y, m, 1));
+      let clientesTotal = 0;
+      let mrrTotal = 0;
+      let recebidos = 0;
+      let perdidos = 0;
+      withStart.forEach((d) => {
+        const s = d.start as Date;
+        const e = d.end;
+        const startedBy = s.getTime() <= eom.getTime();
+        const notEnded = !e || isNaN(e.getTime()) || e.getTime() > eom.getTime();
+        if (startedBy && notEnded) {
+          clientesTotal += 1;
+          mrrTotal += d.mrr;
+        }
+        if (s.getTime() >= som.getTime() && s.getTime() <= eom.getTime()) recebidos += 1;
+        if (
+          d.churn &&
+          e &&
+          !isNaN(e.getTime()) &&
+          e.getTime() >= som.getTime() &&
+          e.getTime() <= eom.getTime()
+        ) {
+          perdidos += 1;
+        }
+      });
+      points.push({
+        key: `${y}-${String(m + 1).padStart(2, "0")}`,
+        label: `${meses[m]}/${String(y).slice(2)}`,
+        clientesTotal,
+        mrrTotal,
+        recebidos,
+        perdidos,
+      });
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+    }
+    // Limita a últimos 24 meses para legibilidade
+    return points.slice(-24);
+  }, [filtered]);
+
   const contratosEmRisco = useMemo(
     () =>
       filtered
@@ -259,12 +336,12 @@ function CarteiraDashboard() {
   };
 
   const clearFilters = () => {
-    setProfitFilter(ALL);
-    setFranquiaFilter(ALL);
-    setStatusFilter(ALL);
-    setPlanoFilter(ALL);
-    setTipoFilter(ALL);
-    setFaixaFilter(ALL);
+    setProfitFilter([]);
+    setFranquiaFilter([]);
+    setStatusFilter([]);
+    setPlanoFilter([]);
+    setTipoFilter([]);
+    setFaixaFilter([]);
     setSortKey(null);
   };
 
@@ -475,6 +552,70 @@ function CarteiraDashboard() {
           </Card>
         </div>
 
+        {/* Evolução mensal */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Crescimento de Clientes por Mês</CardTitle></CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={10} />
+                  <YAxis fontSize={11} allowDecimals={false} />
+                  <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                  <Line
+                    type="monotone"
+                    dataKey="clientesTotal"
+                    name="Clientes ativos"
+                    stroke="oklch(0.6 0.2 250)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Crescimento de MRR por Mês</CardTitle></CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={10} />
+                  <YAxis fontSize={11} tickFormatter={(v) => brl(v)} width={80} />
+                  <Tooltip formatter={(v: number) => brlFull(v)} />
+                  <Line
+                    type="monotone"
+                    dataKey="mrrTotal"
+                    name="MRR"
+                    stroke="oklch(0.65 0.18 180)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">Clientes Recebidos vs. Perdidos por Mês</CardTitle></CardHeader>
+          <CardContent className="h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" fontSize={10} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                <Legend />
+                <Bar dataKey="recebidos" name="Recebidos" fill="oklch(0.7 0.18 145)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="perdidos" name="Perdidos" fill="oklch(0.6 0.22 25)" radius={[4, 4, 0, 0]} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
         {/* Contratos em risco */}
         <Card>
           <CardHeader>
@@ -642,19 +783,61 @@ function AlertCard({
 
 function FilterSelect({
   label, value, onChange, options,
-}: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+}: { label: string; value: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  const toggle = (opt: string) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  const display =
+    value.length === 0
+      ? "Todos"
+      : value.length === 1
+        ? value[0]
+        : `${value.length} selecionados`;
   return (
-    <div className="flex min-w-[170px] flex-col gap-1">
+    <div className="flex min-w-[180px] flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Todos</SelectItem>
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-full justify-between font-normal"
+          >
+            <span className="truncate">{display}</span>
+            <ChevronDown className="h-4 w-4 opacity-60" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-64 p-0">
+          <div className="flex items-center justify-between border-b px-3 py-2 text-xs">
+            <span className="font-medium">{label}</span>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => onChange([])}
+            >
+              Limpar
+            </button>
+          </div>
+          <ScrollArea className="max-h-64">
+            <div className="p-1">
+              {options.map((o) => {
+                const checked = value.includes(o);
+                return (
+                  <button
+                    type="button"
+                    key={o}
+                    onClick={() => toggle(o)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent"
+                  >
+                    <Checkbox checked={checked} className="pointer-events-none" />
+                    <span className="flex-1 truncate text-left">{o}</span>
+                    {checked && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
