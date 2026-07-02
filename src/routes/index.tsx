@@ -300,8 +300,7 @@ function CarteiraDashboard() {
             d.vencimentoDias <= 60 &&
             d.renovacaoAuto !== "Sim",
         )
-        .sort((a, b) => (a.vencimentoDias ?? 0) - (b.vencimentoDias ?? 0))
-        .slice(0, 20),
+        .sort((a, b) => (a.vencimentoDias ?? 0) - (b.vencimentoDias ?? 0)),
     [filtered],
   );
 
@@ -644,47 +643,49 @@ function CarteiraDashboard() {
                 Nenhum contrato em risco identificado.
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Franquia</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Valor Mensal</TableHead>
-                    <TableHead className="text-right">Vence em</TableHead>
-                    <TableHead>Faixa</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {contratosEmRisco.map((d, i) => {
-                    const v = d.vencimentoDias ?? 0;
-                    const tone =
-                      v < 0 ? "text-red-600 dark:text-red-400"
-                        : v <= 30 ? "text-amber-600 dark:text-amber-400"
-                          : "text-foreground";
-                    return (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{d.cliente}</TableCell>
-                        <TableCell>{d.franquia}</TableCell>
-                        <TableCell>{d.plano}</TableCell>
-                        <TableCell>{d.tipoContrato}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {d.valorMensal !== null ? brl(d.valorMensal) : "—"}
-                        </TableCell>
-                        <TableCell className={`text-right tabular-nums font-medium ${tone}`}>
-                          {v < 0 ? `${Math.abs(v)}d vencido` : `${v}d`}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" style={{ backgroundColor: `${FAIXA_COLORS[d.faixaVencimento] ?? "hsl(var(--muted))"}25`, color: FAIXA_COLORS[d.faixaVencimento] ?? "inherit" }}>
-                            {d.faixaVencimento}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <ScrollArea className="h-[520px] w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Franquia</TableHead>
+                      <TableHead>Plano</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Valor Mensal</TableHead>
+                      <TableHead className="text-right">Vence em</TableHead>
+                      <TableHead>Faixa</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contratosEmRisco.map((d, i) => {
+                      const v = d.vencimentoDias ?? 0;
+                      const tone =
+                        v < 0 ? "text-red-600 dark:text-red-400"
+                          : v <= 30 ? "text-amber-600 dark:text-amber-400"
+                            : "text-foreground";
+                      return (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{d.cliente}</TableCell>
+                          <TableCell>{d.franquia}</TableCell>
+                          <TableCell>{d.plano}</TableCell>
+                          <TableCell>{d.tipoContrato}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {d.valorMensal !== null ? brl(d.valorMensal) : "—"}
+                          </TableCell>
+                          <TableCell className={`text-right tabular-nums font-medium ${tone}`}>
+                            {v < 0 ? `${Math.abs(v)}d vencido` : `${v}d`}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" style={{ backgroundColor: `${FAIXA_COLORS[d.faixaVencimento] ?? "hsl(var(--muted))"}25`, color: FAIXA_COLORS[d.faixaVencimento] ?? "inherit" }}>
+                              {d.faixaVencimento}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
