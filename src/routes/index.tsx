@@ -4,16 +4,15 @@ import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
+  PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, ComposedChart,
 } from "recharts";
-import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown } from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -40,8 +39,6 @@ export const Route = createFileRoute("/")({
   notFoundComponent: () => <div className="p-8">Sem dados.</div>,
   component: CarteiraDashboard,
 });
-
-const ALL = "__all__";
 
 const STATUS_COLORS: Record<string, string> = {
   Ativo: "oklch(0.7 0.18 145)",
