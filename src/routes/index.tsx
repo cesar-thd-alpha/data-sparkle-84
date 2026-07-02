@@ -203,6 +203,87 @@ function CarteiraDashboard() {
       .map((name) => ({ name, value: map.get(name) ?? 0 }));
   }, [filtered]);
 
+  // Séries temporais mensais
+  const timeSeries = useMemo(() => {
+    type Point = {
+      key: string;
+      label: string;
+      clientesTotal: number;
+      mrrTotal: number;
+      recebidos: number;
+      perdidos: number;
+    };
+    const monthKey = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+    const withStart = filtered
+      .map((d) => ({
+        start: d.inicioContrato ? new Date(d.inicioContrato) : null,
+        end: d.fimContrato ? new Date(d.fimContrato) : null,
+        churn: d.churn,
+        mrr: d.valorMensal ?? 0,
+      }))
+      .filter((d) => d.start && !isNaN(d.start.getTime()));
+
+    if (withStart.length === 0) return [] as Point[];
+
+    const minStart = new Date(
+      Math.min(...withStart.map((d) => (d.start as Date).getTime())),
+    );
+    const maxEnd = withStart.reduce((max, d) => {
+      const t = d.end && !isNaN(d.end.getTime()) ? d.end.getTime() : 0;
+      return t > max ? t : max;
+    }, 0);
+    const now = new Date();
+    const endBound = new Date(Math.max(now.getTime(), maxEnd));
+
+    const points: Point[] = [];
+    let y = minStart.getUTCFullYear();
+    let m = minStart.getUTCMonth();
+    while (y < endBound.getUTCFullYear() || (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())) {
+      const eom = monthEnd(y, m);
+      const som = new Date(Date.UTC(y, m, 1));
+      let clientesTotal = 0;
+      let mrrTotal = 0;
+      let recebidos = 0;
+      let perdidos = 0;
+      withStart.forEach((d) => {
+        const s = d.start as Date;
+        const e = d.end;
+        const startedBy = s.getTime() <= eom.getTime();
+        const notEnded = !e || isNaN(e.getTime()) || e.getTime() > eom.getTime();
+        if (startedBy && notEnded) {
+          clientesTotal += 1;
+          mrrTotal += d.mrr;
+        }
+        if (s.getTime() >= som.getTime() && s.getTime() <= eom.getTime()) recebidos += 1;
+        if (
+          d.churn &&
+          e &&
+          !isNaN(e.getTime()) &&
+          e.getTime() >= som.getTime() &&
+          e.getTime() <= eom.getTime()
+        ) {
+          perdidos += 1;
+        }
+      });
+      points.push({
+        key: `${y}-${String(m + 1).padStart(2, "0")}`,
+        label: `${meses[m]}/${String(y).slice(2)}`,
+        clientesTotal,
+        mrrTotal,
+        recebidos,
+        perdidos,
+      });
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+    }
+    // Limita a últimos 24 meses para legibilidade
+    return points.slice(-24);
+  }, [filtered]);
+
   const contratosEmRisco = useMemo(
     () =>
       filtered
