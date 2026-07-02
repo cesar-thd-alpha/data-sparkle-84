@@ -552,6 +552,70 @@ function CarteiraDashboard() {
           </Card>
         </div>
 
+        {/* Evolução mensal */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Crescimento de Clientes por Mês</CardTitle></CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={10} />
+                  <YAxis fontSize={11} allowDecimals={false} />
+                  <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                  <Line
+                    type="monotone"
+                    dataKey="clientesTotal"
+                    name="Clientes ativos"
+                    stroke="oklch(0.6 0.2 250)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Crescimento de MRR por Mês</CardTitle></CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={10} />
+                  <YAxis fontSize={11} tickFormatter={(v) => brl(v)} width={80} />
+                  <Tooltip formatter={(v: number) => brlFull(v)} />
+                  <Line
+                    type="monotone"
+                    dataKey="mrrTotal"
+                    name="MRR"
+                    stroke="oklch(0.65 0.18 180)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">Clientes Recebidos vs. Perdidos por Mês</CardTitle></CardHeader>
+          <CardContent className="h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" fontSize={10} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                <Legend />
+                <Bar dataKey="recebidos" name="Recebidos" fill="oklch(0.7 0.18 145)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="perdidos" name="Perdidos" fill="oklch(0.6 0.22 25)" radius={[4, 4, 0, 0]} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
         {/* Contratos em risco */}
         <Card>
           <CardHeader>
