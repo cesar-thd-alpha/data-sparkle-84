@@ -638,19 +638,61 @@ function AlertCard({
 
 function FilterSelect({
   label, value, onChange, options,
-}: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+}: { label: string; value: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  const toggle = (opt: string) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  const display =
+    value.length === 0
+      ? "Todos"
+      : value.length === 1
+        ? value[0]
+        : `${value.length} selecionados`;
   return (
-    <div className="flex min-w-[170px] flex-col gap-1">
+    <div className="flex min-w-[180px] flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Todos</SelectItem>
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-full justify-between font-normal"
+          >
+            <span className="truncate">{display}</span>
+            <ChevronDown className="h-4 w-4 opacity-60" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-64 p-0">
+          <div className="flex items-center justify-between border-b px-3 py-2 text-xs">
+            <span className="font-medium">{label}</span>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => onChange([])}
+            >
+              Limpar
+            </button>
+          </div>
+          <ScrollArea className="max-h-64">
+            <div className="p-1">
+              {options.map((o) => {
+                const checked = value.includes(o);
+                return (
+                  <button
+                    type="button"
+                    key={o}
+                    onClick={() => toggle(o)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent"
+                  >
+                    <Checkbox checked={checked} className="pointer-events-none" />
+                    <span className="flex-1 truncate text-left">{o}</span>
+                    {checked && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
