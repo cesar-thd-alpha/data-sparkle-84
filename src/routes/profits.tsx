@@ -26,7 +26,7 @@ const carteiraQuery = queryOptions({
   queryFn: () => getCarteira(),
 });
 
-export const Route = createFileRoute("/carteira")({
+export const Route = createFileRoute("/profits")({
   head: () => ({
     meta: [
       { title: "Carteira de Clientes por Profit" },

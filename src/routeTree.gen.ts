@@ -9,79 +9,69 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as CarteiraRouteImport } from './routes/carteira'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProfitsRouteImport } from './routes/profits'
+import { Route as PerformanceRouteImport } from './routes/performance'
 
-const CarteiraRoute = CarteiraRouteImport.update({
-  id: '/carteira',
-  path: '/carteira',
+const ProfitsRoute = ProfitsRouteImport.update({
+  id: '/profits',
+  path: '/profits',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/carteira': typeof CarteiraRoute
+  '/performance': typeof PerformanceRoute
+  '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/carteira': typeof CarteiraRoute
+  '/performance': typeof PerformanceRoute
+  '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/carteira': typeof CarteiraRoute
+  '/performance': typeof PerformanceRoute
+  '/profits': typeof ProfitsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/carteira'
+  fullPaths: '/performance' | '/profits'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/carteira'
-  id: '__root__' | '/' | '/carteira'
+  to: '/performance' | '/profits'
+  id: '__root__' | '/performance' | '/profits'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CarteiraRoute: typeof CarteiraRoute
+  PerformanceRoute: typeof PerformanceRoute
+  ProfitsRoute: typeof ProfitsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/carteira': {
-      id: '/carteira'
-      path: '/carteira'
-      fullPath: '/carteira'
-      preLoaderRoute: typeof CarteiraRouteImport
+    '/profits': {
+      id: '/profits'
+      path: '/profits'
+      fullPath: '/profits'
+      preLoaderRoute: typeof ProfitsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CarteiraRoute: CarteiraRoute,
+  PerformanceRoute: PerformanceRoute,
+  ProfitsRoute: ProfitsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

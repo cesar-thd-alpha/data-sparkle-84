@@ -23,7 +23,7 @@ const metricsQuery = queryOptions({
   queryFn: () => getMetrics(),
 });
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/performance")({
   head: () => ({
     meta: [
       { title: "Dashboard de Performance" },
