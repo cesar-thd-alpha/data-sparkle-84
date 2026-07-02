@@ -125,7 +125,7 @@ function CarteiraDashboard() {
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo).reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const receitaContratada = filtered.filter((d) => d.ativo).reduce((s, d) => s + (d.valorContrato ?? 0), 0);
+  const receitaContratada = filtered.reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativos > 0 ? mrr / ativos : 0;
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
