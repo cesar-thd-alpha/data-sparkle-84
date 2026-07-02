@@ -78,12 +78,12 @@ type SortKey =
 function CarteiraDashboard() {
   const { data } = useSuspenseQuery(clientesQuery);
 
-  const [profitFilter, setProfitFilter] = useState(ALL);
-  const [franquiaFilter, setFranquiaFilter] = useState(ALL);
-  const [statusFilter, setStatusFilter] = useState(ALL);
-  const [planoFilter, setPlanoFilter] = useState(ALL);
-  const [tipoFilter, setTipoFilter] = useState(ALL);
-  const [faixaFilter, setFaixaFilter] = useState(ALL);
+  const [profitFilter, setProfitFilter] = useState<string[]>([]);
+  const [franquiaFilter, setFranquiaFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [planoFilter, setPlanoFilter] = useState<string[]>([]);
+  const [tipoFilter, setTipoFilter] = useState<string[]>([]);
+  const [faixaFilter, setFaixaFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -100,19 +100,18 @@ function CarteiraDashboard() {
     };
   }, [data]);
 
-  const filtered = useMemo(
-    () =>
-      data.filter(
-        (d) =>
-          (profitFilter === ALL || d.profit === profitFilter) &&
-          (franquiaFilter === ALL || d.franquia === franquiaFilter) &&
-          (statusFilter === ALL || d.status === statusFilter) &&
-          (planoFilter === ALL || d.plano === planoFilter) &&
-          (tipoFilter === ALL || d.tipoContrato === tipoFilter) &&
-          (faixaFilter === ALL || d.faixaVencimento === faixaFilter),
-      ),
-    [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter],
-  );
+  const filtered = useMemo(() => {
+    const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
+    return data.filter(
+      (d) =>
+        match(profitFilter, d.profit) &&
+        match(franquiaFilter, d.franquia) &&
+        match(statusFilter, d.status) &&
+        match(planoFilter, d.plano) &&
+        match(tipoFilter, d.tipoContrato) &&
+        match(faixaFilter, d.faixaVencimento),
+    );
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter]);
 
   // KPIs
   const totalClientes = filtered.length;
