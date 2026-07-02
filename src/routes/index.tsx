@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, ComposedChart,
 } from "recharts";
-import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown, Info } from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip as Tooltip2,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const clientesQuery = queryOptions({
   queryKey: ["clientes"],
@@ -386,18 +392,26 @@ function CarteiraDashboard() {
             label="MRR (Receita Recorrente)"
             value={brl(mrr)}
             accent="oklch(0.6 0.2 250)"
+            tooltip="Soma do MRR (planilhas) de Todos os Clientes Ativos"
           />
           <Kpi
             icon={<TrendingUp className="h-4 w-4" />}
             label="Receita Contratada"
             value={brl(receitaContratada)}
             accent="oklch(0.65 0.18 180)"
+            tooltip="Soma do Valor de Contrato de todos os Clientes (Ativos, Pausados e Churn)"
           />
-          <Kpi label="Ticket Médio" value={brl(ticketMedio)} accent="oklch(0.7 0.18 145)" />
+          <Kpi
+            label="Ticket Médio"
+            value={brl(ticketMedio)}
+            accent="oklch(0.7 0.18 145)"
+            tooltip="Soma do MRR de Todos os Clientes Ativos divido por Qtd de Clientes Ativos"
+          />
           <Kpi
             label="Churn Rate"
             value={`${churnRate.toFixed(1)}%`}
             accent={churnRate > 5 ? "oklch(0.6 0.22 25)" : "oklch(0.7 0.18 145)"}
+            tooltip="Qtd Clientes Churn dividido por Total de Clientes (Ativos, Pausados e Churn)"
           />
         </div>
 
@@ -732,23 +746,52 @@ function CarteiraDashboard() {
 }
 
 function Kpi({
-  label, value, accent, icon,
+  label,
+  value,
+  accent,
+  icon,
+  tooltip,
 }: {
   label: string;
   value: React.ReactNode;
   accent?: string;
   icon?: React.ReactNode;
+  tooltip?: string;
 }) {
   return (
     <Card>
       <CardContent className="pt-5">
         <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold tracking-tight" style={accent ? { color: accent } : undefined}>
+          <div
+            className="text-2xl font-bold tracking-tight"
+            style={accent ? { color: accent } : undefined}
+          >
             {value}
           </div>
+
           {icon && <div className="text-muted-foreground">{icon}</div>}
         </div>
-        <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+
+        <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
+          <span className="flex items-center justify-between">
+            {label}
+
+            {tooltip && (
+              <TooltipProvider>
+                <Tooltip2>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-pointer">
+                      <Info className="w-4" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{tooltip}</p>
+                  </TooltipContent>
+                </Tooltip2>
+              </TooltipProvider>
+            )}
+          </span>
+        </div>
       </CardContent>
     </Card>
   );
