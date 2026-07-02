@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfitsRouteImport } from './routes/profits'
 import { Route as PerformanceRouteImport } from './routes/performance'
+import { Route as IndexRouteImport } from './routes/index'
 
 const ProfitsRoute = ProfitsRouteImport.update({
   id: '/profits',
@@ -22,29 +23,38 @@ const PerformanceRoute = PerformanceRouteImport.update({
   path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/performance' | '/profits'
+  fullPaths: '/' | '/performance' | '/profits'
   fileRoutesByTo: FileRoutesByTo
-  to: '/performance' | '/profits'
-  id: '__root__' | '/performance' | '/profits'
+  to: '/' | '/performance' | '/profits'
+  id: '__root__' | '/' | '/performance' | '/profits'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   PerformanceRoute: typeof PerformanceRoute
   ProfitsRoute: typeof ProfitsRoute
 }
@@ -65,10 +75,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   PerformanceRoute: PerformanceRoute,
   ProfitsRoute: ProfitsRoute,
 }
