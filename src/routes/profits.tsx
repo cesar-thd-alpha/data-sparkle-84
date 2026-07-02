@@ -26,7 +26,7 @@ const carteiraQuery = queryOptions({
   queryFn: () => getCarteira(),
 });
 
-export const Route = createFileRoute("/carteira")({
+export const Route = createFileRoute("/profits")({
   head: () => ({
     meta: [
       { title: "Carteira de Clientes por Profit" },
@@ -219,18 +219,15 @@ function CarteiraPage() {
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Carteira de Clientes</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Profits</h1>
             <p className="text-sm text-muted-foreground">
               Distribuição de clientes por Profit e Franquia.
             </p>
           </div>
           <nav className="flex gap-2">
-            <Link to="/">
-              <Button variant="ghost" size="sm">Performance</Button>
-            </Link>
-            <Link to="/carteira">
-              <Button variant="secondary" size="sm">Carteira</Button>
-            </Link>
+            <Link to="/"><Button variant="ghost" size="sm">Carteira</Button></Link>
+            <Link to="/profits"><Button variant="secondary" size="sm">Profits</Button></Link>
+            <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
           </nav>
         </div>
       </header>
