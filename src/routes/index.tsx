@@ -255,12 +255,12 @@ function CarteiraDashboard() {
   };
 
   const clearFilters = () => {
-    setProfitFilter(ALL);
-    setFranquiaFilter(ALL);
-    setStatusFilter(ALL);
-    setPlanoFilter(ALL);
-    setTipoFilter(ALL);
-    setFaixaFilter(ALL);
+    setProfitFilter([]);
+    setFranquiaFilter([]);
+    setStatusFilter([]);
+    setPlanoFilter([]);
+    setTipoFilter([]);
+    setFaixaFilter([]);
     setSortKey(null);
   };
 
