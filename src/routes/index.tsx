@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, ComposedChart,
 } from "recharts";
-import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown, Info } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown, Info, Download, Search } from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -92,6 +93,7 @@ function CarteiraDashboard() {
   const [faixaFilter, setFaixaFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [clienteSearch, setClienteSearch] = useState("");
 
   const opts = useMemo(() => {
     const uniq = (k: keyof ClienteRow) =>
@@ -691,12 +693,96 @@ function CarteiraDashboard() {
         </Card>
 
         {/* Detalhamento completo */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Detalhamento de Clientes ({sortedRows.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[520px] w-full">
+        <DetalhamentoCard
+          rows={sortedRows}
+          clienteSearch={clienteSearch}
+          setClienteSearch={setClienteSearch}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          toggleSort={toggleSort}
+        />
+      </main>
+    </div>
+  );
+}
+
+function DetalhamentoCard({
+  rows,
+  clienteSearch,
+  setClienteSearch,
+  sortKey,
+  sortDir,
+  toggleSort,
+}: {
+  rows: ClienteRow[];
+  clienteSearch: string;
+  setClienteSearch: (v: string) => void;
+  sortKey: SortKey | null;
+  sortDir: "asc" | "desc";
+  toggleSort: (k: SortKey) => void;
+}) {
+  const q = clienteSearch.trim().toLowerCase();
+  const visible = q ? rows.filter((r) => r.cliente.toLowerCase().includes(q)) : rows;
+
+  const downloadCsv = () => {
+    const headers = [
+      "Cliente", "Franquia", "Profit", "Status", "Plano", "Tipo Contrato",
+      "Valor Mensal", "Valor Contrato", "Início Contrato", "Fim Contrato",
+      "Renovação Auto", "Vencimento (dias)", "Faixa Vencimento", "Alerta",
+      "Ativo", "Churn", "Pausado",
+    ];
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(";")];
+    for (const d of visible) {
+      lines.push([
+        d.cliente, d.franquia, d.profit, d.status, d.plano, d.tipoContrato,
+        d.valorMensal ?? "", d.valorContrato ?? "",
+        d.inicioContrato ? d.inicioContrato.slice(0, 10) : "",
+        d.fimContrato ? d.fimContrato.slice(0, 10) : "",
+        d.renovacaoAuto, d.vencimentoDias ?? "", d.faixaVencimento, d.alerta,
+        d.ativo ? "Sim" : "Não", d.churn ? "Sim" : "Não", d.pausado ? "Sim" : "Não",
+      ].map(esc).join(";"));
+    }
+    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `detalhamento-clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base">
+            Detalhamento de Clientes ({visible.length}
+            {q && visible.length !== rows.length ? ` de ${rows.length}` : ""})
+          </CardTitle>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={clienteSearch}
+                onChange={(e) => setClienteSearch(e.target.value)}
+                placeholder="Buscar cliente..."
+                className="h-9 w-full pl-8 sm:w-64"
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={downloadCsv} className="gap-2">
+              <Download className="h-4 w-4" /> CSV
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[520px] w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -712,7 +798,7 @@ function CarteiraDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedRows.map((d, i) => {
+              {visible.map((d, i) => {
                     const statusColor = STATUS_COLORS[d.status] ?? "hsl(var(--muted-foreground))";
                     return (
                       <TableRow key={i}>
@@ -741,8 +827,6 @@ function CarteiraDashboard() {
             </ScrollArea>
           </CardContent>
         </Card>
-      </main>
-    </div>
   );
 }
 
