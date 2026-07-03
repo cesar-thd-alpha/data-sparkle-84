@@ -94,6 +94,8 @@ function CarteiraDashboard() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [clienteSearch, setClienteSearch] = useState("");
+  const [inicioDe, setInicioDe] = useState<string>("");
+  const [fimAte, setFimAte] = useState<string>("");
 
   const opts = useMemo(() => {
     const uniq = (k: keyof ClienteRow) =>
@@ -110,6 +112,8 @@ function CarteiraDashboard() {
 
   const filtered = useMemo(() => {
     const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
+    const inicioDeTs = inicioDe ? new Date(inicioDe + "T00:00:00").getTime() : null;
+    const fimAteTs = fimAte ? new Date(fimAte + "T23:59:59").getTime() : null;
     return data.filter(
       (d) =>
         match(profitFilter, d.profit) &&
@@ -117,9 +121,13 @@ function CarteiraDashboard() {
         match(statusFilter, d.status) &&
         match(planoFilter, d.plano) &&
         match(tipoFilter, d.tipoContrato) &&
-        match(faixaFilter, d.faixaVencimento),
+        match(faixaFilter, d.faixaVencimento) &&
+        (inicioDeTs === null ||
+          (d.inicioContrato ? new Date(d.inicioContrato).getTime() >= inicioDeTs : false)) &&
+        (fimAteTs === null ||
+          (d.fimContrato ? new Date(d.fimContrato).getTime() <= fimAteTs : false)),
     );
-  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter]);
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inicioDe, fimAte]);
 
   // KPIs
   const totalClientes = filtered.length;
@@ -349,6 +357,8 @@ function CarteiraDashboard() {
     setPlanoFilter([]);
     setTipoFilter([]);
     setFaixaFilter([]);
+    setInicioDe("");
+    setFimAte("");
     setSortKey(null);
   };
 
@@ -402,6 +412,24 @@ function CarteiraDashboard() {
             <FilterSelect label="Plano" value={planoFilter} onChange={setPlanoFilter} options={opts.plano} />
             <FilterSelect label="Tipo Contrato" value={tipoFilter} onChange={setTipoFilter} options={opts.tipo} />
             <FilterSelect label="Vencimento" value={faixaFilter} onChange={setFaixaFilter} options={opts.faixa} />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Início a partir de</label>
+              <Input
+                type="date"
+                value={inicioDe}
+                onChange={(e) => setInicioDe(e.target.value)}
+                className="h-9 w-[160px]"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Fim até</label>
+              <Input
+                type="date"
+                value={fimAte}
+                onChange={(e) => setFimAte(e.target.value)}
+                className="h-9 w-[160px]"
+              />
+            </div>
             <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
               Limpar filtros
             </Button>
