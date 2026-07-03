@@ -128,7 +128,8 @@ function CarteiraDashboard() {
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const profits = new Set(filtered.map((d) => d.profit)).size;
-  const mrr = filtered.filter((d) => d.ativo).reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const mrrTcv = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const ticketMedio = ativos > 0 ? mrr / ativos : 0;
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
@@ -408,13 +409,20 @@ function CarteiraDashboard() {
         </Card>
 
         {/* KPIs — Row 1: financeiro */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
             label="MRR (Receita Recorrente)"
             value={brl(mrr)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do MRR (planilhas) de Todos os Clientes Ativos"
+            tooltip="Soma do MRR de Todos os Clientes Ativos com Contrato Mensal"
+          />
+          <Kpi
+            icon={<DollarSign className="h-4 w-4" />}
+            label="MRR TCV"
+            value={brl(mrrTcv)}
+            accent="oklch(0.6 0.2 250)"
+            tooltip="Soma do MRR de Todos os Clientes Ativos com Contratos Trimestrais, Semestrais, Anuais"
           />
           <Kpi
             label="Lifetime Médio"
