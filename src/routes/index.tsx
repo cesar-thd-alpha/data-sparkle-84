@@ -129,7 +129,6 @@ function CarteiraDashboard() {
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo).reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const receitaContratada = filtered.reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativos > 0 ? mrr / ativos : 0;
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
@@ -352,6 +351,28 @@ function CarteiraDashboard() {
     setSortKey(null);
   };
 
+  const diffMonths = (start: Date, end: Date) =>
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth());
+
+  const lifetimeMedio = useMemo(() => {
+    const valores = filtered
+      .filter(d => d.inicioContrato)
+      .map(d => {
+        const inicio = new Date(d.inicioContrato!);
+        const fim =
+          d.churn && d.fimContrato
+            ? new Date(d.fimContrato)
+            : new Date();
+
+        return diffMonths(inicio, fim);
+      });
+
+    if (!valores.length) return 0;
+
+    return valores.reduce((a, b) => a + b, 0) / valores.length;
+  }, [filtered]);
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-card">
@@ -396,11 +417,9 @@ function CarteiraDashboard() {
             tooltip="Soma do MRR (planilhas) de Todos os Clientes Ativos"
           />
           <Kpi
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="Receita Contratada"
-            value={brl(receitaContratada)}
+            label="Lifetime Médio"
+            value={`${lifetimeMedio.toFixed(1)} meses`}
             accent="oklch(0.65 0.18 180)"
-            tooltip="Soma do Valor de Contrato de todos os Clientes (Ativos, Pausados e Churn)"
           />
           <Kpi
             label="Ticket Médio"
@@ -783,50 +802,50 @@ function DetalhamentoCard({
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[520px] w-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableHead label="Cliente" k="cliente" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Franquia" k="franquia" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Profit" k="profit" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Plano" k="plano" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Tipo" k="tipoContrato" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Valor Mensal" k="valorMensal" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="Vence em" k="vencimentoDias" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="Faixa" k="faixaVencimento" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead label="Cliente" k="cliente" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Franquia" k="franquia" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Profit" k="profit" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Plano" k="plano" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Tipo" k="tipoContrato" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead label="Valor Mensal" k="valorMensal" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
+                <SortableHead label="Vence em" k="vencimentoDias" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
+                <SortableHead label="Faixa" k="faixaVencimento" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {visible.map((d, i) => {
-                    const statusColor = STATUS_COLORS[d.status] ?? "hsl(var(--muted-foreground))";
-                    return (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{d.cliente}</TableCell>
-                        <TableCell>{d.franquia}</TableCell>
-                        <TableCell>{d.profit}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" style={{ backgroundColor: `${statusColor}25`, color: statusColor }}>
-                            {d.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{d.plano}</TableCell>
-                        <TableCell>{d.tipoContrato}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {d.valorMensal !== null ? brl(d.valorMensal) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">
-                          {d.vencimentoDias !== null ? `${d.vencimentoDias}d` : "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{d.faixaVencimento}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                const statusColor = STATUS_COLORS[d.status] ?? "hsl(var(--muted-foreground))";
+                return (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{d.cliente}</TableCell>
+                    <TableCell>{d.franquia}</TableCell>
+                    <TableCell>{d.profit}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" style={{ backgroundColor: `${statusColor}25`, color: statusColor }}>
+                        {d.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{d.plano}</TableCell>
+                    <TableCell>{d.tipoContrato}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {d.valorMensal !== null ? brl(d.valorMensal) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {d.vencimentoDias !== null ? `${d.vencimentoDias}d` : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{d.faixaVencimento}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }
 
