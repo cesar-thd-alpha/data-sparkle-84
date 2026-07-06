@@ -469,7 +469,7 @@ function CarteiraDashboard() {
         </div>
 
         {/* KPIs — Row 2: carteira */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
           <Kpi icon={<Users className="h-4 w-4" />} label="Total de Clientes" value={totalClientes} />
           <Kpi label="Ativos" value={<span className="inline-flex items-center gap-2">🟢 {ativos}</span>} accent="oklch(0.7 0.18 145)" />
           <Kpi label="Churn" value={<span className="inline-flex items-center gap-2">🔴 {churn}</span>} accent="oklch(0.6 0.22 25)" />
