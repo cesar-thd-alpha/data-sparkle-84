@@ -104,7 +104,7 @@ function CarteiraDashboard() {
       profit: uniq("profit"),
       franquia: uniq("franquia"),
       status: uniq("status"),
-      plano: uniq("plano"),
+      // plano: uniq("plano"),
       tipo: uniq("tipoContrato"),
       faixa: uniq("faixaVencimento"),
     };
@@ -413,7 +413,7 @@ function CarteiraDashboard() {
             <FilterSelect label="Profit" value={profitFilter} onChange={setProfitFilter} options={opts.profit} />
             <FilterSelect label="Franquia" value={franquiaFilter} onChange={setFranquiaFilter} options={opts.franquia} />
             <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={opts.status} />
-            <FilterSelect label="Plano" value={planoFilter} onChange={setPlanoFilter} options={opts.plano} />
+            {/* <FilterSelect label="Plano" value={planoFilter} onChange={setPlanoFilter} options={opts.plano} /> */}
             <FilterSelect label="Tipo Contrato" value={tipoFilter} onChange={setTipoFilter} options={opts.tipo} />
             <FilterSelect label="Vencimento" value={faixaFilter} onChange={setFaixaFilter} options={opts.faixa} />
             <div className="flex flex-col gap-1">
