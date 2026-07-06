@@ -132,13 +132,14 @@ function CarteiraDashboard() {
   // KPIs
   const totalClientes = filtered.length;
   const ativos = filtered.filter((d) => d.ativo).length;
+  const ativosMRR = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").length;
   const churn = filtered.filter((d) => d.churn).length;
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const mrrTcv = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const ticketMedio = ativos > 0 ? mrr / ativos : 0;
+  const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
     (d) => d.ativo && d.vencimentoDias !== null && d.vencimentoDias >= 0 && d.vencimentoDias <= 30,
@@ -458,10 +459,10 @@ function CarteiraDashboard() {
             accent="oklch(0.65 0.18 180)"
           />
           <Kpi
-            label="Ticket Médio"
+            label="Ticket Médio MRR"
             value={brl(ticketMedio)}
             accent="oklch(0.7 0.18 145)"
-            tooltip="Soma do MRR de Todos os Clientes Ativos divido por Qtd de Clientes Ativos"
+            tooltip="Soma do MRR dos Clientes (mensais) Ativos divido por Qtd de Clientes (mensais) Ativos"
           />
           <Kpi
             label="Churn Rate"
