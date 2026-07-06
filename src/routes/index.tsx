@@ -489,7 +489,6 @@ function CarteiraDashboard() {
           <Kpi label="Churn" value={<span className="inline-flex items-center gap-2">🔴 {churn}</span>} accent="oklch(0.6 0.22 25)" />
           <Kpi label="Pausados" value={<span className="inline-flex items-center gap-2">🟡 {pausados}</span>} accent="oklch(0.78 0.15 80)" />
           <Kpi icon={<Building2 className="h-4 w-4" />} label="Franquias" value={franquias} />
-          <Kpi label="Profits" value={profits} />
         </div>
 
         {/* Alertas */}
