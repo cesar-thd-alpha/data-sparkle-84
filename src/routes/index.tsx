@@ -137,7 +137,6 @@ function CarteiraDashboard() {
   const churn = filtered.filter((d) => d.churn).length;
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
-  const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const mrrTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
@@ -161,19 +160,6 @@ function CarteiraDashboard() {
       ].filter((s) => s.value > 0),
     [ativos, churn, pausados],
   );
-
-  const porProfit = useMemo(() => {
-    const map = new Map<string, { clientes: number; mrr: number }>();
-    filtered.forEach((d) => {
-      const cur = map.get(d.profit) ?? { clientes: 0, mrr: 0 };
-      cur.clientes += 1;
-      if (d.ativo) cur.mrr += d.valorMensal ?? 0;
-      map.set(d.profit, cur);
-    });
-    return Array.from(map.entries())
-      .map(([profit, v]) => ({ profit, ...v }))
-      .sort((a, b) => b.mrr - a.mrr);
-  }, [filtered]);
 
   const topFranquias = useMemo(() => {
     const map = new Map<string, { clientes: number; mrr: number }>();
