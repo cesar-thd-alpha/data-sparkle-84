@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfitsRouteImport } from './routes/profits'
 import { Route as PerformanceRouteImport } from './routes/performance'
+import { Route as CarteiraProfitsRouteImport } from './routes/carteira-profits'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ProfitsRoute = ProfitsRouteImport.update({
@@ -23,6 +24,11 @@ const PerformanceRoute = PerformanceRouteImport.update({
   path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarteiraProfitsRoute = CarteiraProfitsRouteImport.update({
+  id: '/carteira-profits',
+  path: '/carteira-profits',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/performance' | '/profits'
+  fullPaths: '/' | '/carteira-profits' | '/performance' | '/profits'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/performance' | '/profits'
-  id: '__root__' | '/' | '/performance' | '/profits'
+  to: '/' | '/carteira-profits' | '/performance' | '/profits'
+  id: '__root__' | '/' | '/carteira-profits' | '/performance' | '/profits'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CarteiraProfitsRoute: typeof CarteiraProfitsRoute
   PerformanceRoute: typeof PerformanceRoute
   ProfitsRoute: typeof ProfitsRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/carteira-profits': {
+      id: '/carteira-profits'
+      path: '/carteira-profits'
+      fullPath: '/carteira-profits'
+      preLoaderRoute: typeof CarteiraProfitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CarteiraProfitsRoute: CarteiraProfitsRoute,
   PerformanceRoute: PerformanceRoute,
   ProfitsRoute: ProfitsRoute,
 }
