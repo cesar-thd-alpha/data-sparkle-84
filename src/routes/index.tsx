@@ -508,24 +508,7 @@ function CarteiraDashboard() {
         </div>
 
         {/* Charts row 1 */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">MRR por Profit</CardTitle></CardHeader>
-            <CardContent className="h-[360px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 72 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={11} tickFormatter={(v) => brl(v)} />
-                  <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
-                  <Tooltip formatter={(v: number, n) => (n === "mrr" ? brlFull(v) : v.toLocaleString("pt-BR"))} />
-                  <Bar dataKey="mrr" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]} name="MRR">
-                    <LabelList dataKey="mrr" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 lg:grid-cols-1">
           <Card>
             <CardHeader><CardTitle className="text-base">Status da Carteira</CardTitle></CardHeader>
             <CardContent className="h-[360px]">
