@@ -139,8 +139,9 @@ function CarteiraDashboard() {
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const mrrTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const contratoTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
-  const ticketMedioTCV = ativosTCV > 0 ? mrrTCV / ativosTCV : 0;
+  const ticketMedioTCV = ativosTCV > 0 ? contratoTCV / ativosTCV : 0;
 
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
