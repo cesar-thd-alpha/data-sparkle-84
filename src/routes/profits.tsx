@@ -226,6 +226,7 @@ function CarteiraPage() {
           </div>
           <nav className="flex gap-2">
             <Link to="/"><Button variant="ghost" size="sm">Carteira Geral</Button></Link>
+            <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
             <Link to="/profits"><Button variant="secondary" size="sm">Indicadores Profits</Button></Link>
             <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
           </nav>

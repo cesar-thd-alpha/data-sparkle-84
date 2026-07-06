@@ -33,9 +33,9 @@ const clientesQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Carteira — Dashboard Executivo" },
+      { title: "Carteira Geral — Dashboard Executivo" },
       { name: "description", content: "Visão executiva da carteira de clientes: MRR, distribuição, contratos e riscos." },
-      { property: "og:title", content: "Carteira — Dashboard Executivo" },
+      { property: "og:title", content: "Carteira Geral — Dashboard Executivo" },
       { property: "og:description", content: "Visão executiva da carteira de clientes." },
     ],
   }),
@@ -137,7 +137,6 @@ function CarteiraDashboard() {
   const churn = filtered.filter((d) => d.churn).length;
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
-  const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const mrrTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
@@ -161,19 +160,6 @@ function CarteiraDashboard() {
       ].filter((s) => s.value > 0),
     [ativos, churn, pausados],
   );
-
-  const porProfit = useMemo(() => {
-    const map = new Map<string, { clientes: number; mrr: number }>();
-    filtered.forEach((d) => {
-      const cur = map.get(d.profit) ?? { clientes: 0, mrr: 0 };
-      cur.clientes += 1;
-      if (d.ativo) cur.mrr += d.valorMensal ?? 0;
-      map.set(d.profit, cur);
-    });
-    return Array.from(map.entries())
-      .map(([profit, v]) => ({ profit, ...v }))
-      .sort((a, b) => b.mrr - a.mrr);
-  }, [filtered]);
 
   const topFranquias = useMemo(() => {
     const map = new Map<string, { clientes: number; mrr: number }>();
@@ -400,6 +386,7 @@ function CarteiraDashboard() {
           </div>
           <nav className="flex gap-2">
             <Link to="/"><Button variant="secondary" size="sm">Carteira Geral</Button></Link>
+            <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
             <Link to="/profits"><Button variant="ghost" size="sm">Indicadores Profits</Button></Link>
             <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
           </nav>
@@ -488,7 +475,6 @@ function CarteiraDashboard() {
           <Kpi label="Churn" value={<span className="inline-flex items-center gap-2">🔴 {churn}</span>} accent="oklch(0.6 0.22 25)" />
           <Kpi label="Pausados" value={<span className="inline-flex items-center gap-2">🟡 {pausados}</span>} accent="oklch(0.78 0.15 80)" />
           <Kpi icon={<Building2 className="h-4 w-4" />} label="Franquias" value={franquias} />
-          <Kpi label="Profits" value={profits} />
         </div>
 
         {/* Alertas */}
@@ -508,24 +494,7 @@ function CarteiraDashboard() {
         </div>
 
         {/* Charts row 1 */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">MRR por Profit</CardTitle></CardHeader>
-            <CardContent className="h-[360px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 72 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={11} tickFormatter={(v) => brl(v)} />
-                  <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
-                  <Tooltip formatter={(v: number, n) => (n === "mrr" ? brlFull(v) : v.toLocaleString("pt-BR"))} />
-                  <Bar dataKey="mrr" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]} name="MRR">
-                    <LabelList dataKey="mrr" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 lg:grid-cols-1">
           <Card>
             <CardHeader><CardTitle className="text-base">Status da Carteira</CardTitle></CardHeader>
             <CardContent className="h-[360px]">
