@@ -439,10 +439,10 @@ function CarteiraDashboard() {
           />
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
-            label="MRR TCV"
-            value={brl(mrrTCV)}
+            label="Valor Contratado TCV"
+            value={brl(contratoTCV)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do MRR de Todos os Clientes Ativos com Contratos Trimestrais, Semestrais, Anuais"
+            tooltip="Soma do Valor Contratado de Todos os Clientes TCV Ativos"
           />
           <Kpi
             label="Lifetime Médio"
