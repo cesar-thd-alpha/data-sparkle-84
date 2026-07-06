@@ -132,14 +132,17 @@ function CarteiraDashboard() {
   // KPIs
   const totalClientes = filtered.length;
   const ativos = filtered.filter((d) => d.ativo).length;
+  const ativosTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").length;
   const ativosMRR = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").length;
   const churn = filtered.filter((d) => d.churn).length;
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const profits = new Set(filtered.map((d) => d.profit)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const mrrTcv = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const mrrTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
+  const ticketMedioTCV = ativosTCV > 0 ? mrrTCV / ativosTCV : 0;
+
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
     (d) => d.ativo && d.vencimentoDias !== null && d.vencimentoDias >= 0 && d.vencimentoDias <= 30,
@@ -438,7 +441,7 @@ function CarteiraDashboard() {
         </Card>
 
         {/* KPIs — Row 1: financeiro */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
             label="MRR (Receita Recorrente)"
@@ -449,7 +452,7 @@ function CarteiraDashboard() {
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
             label="MRR TCV"
-            value={brl(mrrTcv)}
+            value={brl(mrrTCV)}
             accent="oklch(0.6 0.2 250)"
             tooltip="Soma do MRR de Todos os Clientes Ativos com Contratos Trimestrais, Semestrais, Anuais"
           />
@@ -463,6 +466,12 @@ function CarteiraDashboard() {
             value={brl(ticketMedio)}
             accent="oklch(0.7 0.18 145)"
             tooltip="Soma do MRR dos Clientes (mensais) Ativos divido por Qtd de Clientes (mensais) Ativos"
+          />
+          <Kpi
+            label="Ticket Médio TCV"
+            value={brl(ticketMedioTCV)}
+            accent="oklch(0.7 0.18 145)"
+            tooltip="Soma do MRR dos Clientes (NÃO mensais) Ativos divido por Qtd de Clientes (NÃO mensais) Ativos"
           />
           <Kpi
             label="Churn Rate"
