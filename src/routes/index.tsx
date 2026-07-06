@@ -494,7 +494,7 @@ function CarteiraDashboard() {
         </div>
 
         {/* Charts row 1 */}
-        <div className="grid gap-4 lg:grid-cols-1">
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Status da Carteira</CardTitle></CardHeader>
             <CardContent className="h-[360px]">
@@ -511,10 +511,7 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Charts row 2 */}
-        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Top 10 Franquias por MRR</CardTitle></CardHeader>
             <CardContent className="h-[400px]">
@@ -531,7 +528,10 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
 
+        {/* Charts row 2 */}
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Distribuição por Plano</CardTitle></CardHeader>
             <CardContent className="h-[400px]">
@@ -554,10 +554,7 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Charts row 3 */}
-        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Contratos por Tipo</CardTitle></CardHeader>
             <CardContent className="h-[320px]">
@@ -574,7 +571,10 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
 
+        {/* Charts row 3 */}
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -599,10 +599,7 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Evolução mensal */}
-        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Crescimento de Clientes por Mês</CardTitle></CardHeader>
             <CardContent className="h-[320px]">
@@ -624,7 +621,10 @@ function CarteiraDashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
 
+        {/* Evolução mensal */}
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Crescimento de MRR por Mês</CardTitle></CardHeader>
             <CardContent className="h-[320px]">
