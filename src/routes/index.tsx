@@ -1010,7 +1010,7 @@ function FilterSelect({
               Limpar
             </button>
           </div>
-          <ScrollArea className="max-h-64">
+          <ScrollArea className="h-64">
             <div className="p-1">
               {options.map((o) => {
                 const checked = value.includes(o);
