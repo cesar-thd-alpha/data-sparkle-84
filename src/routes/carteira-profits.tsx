@@ -98,32 +98,69 @@ function CarteiraProfitsPage() {
   }, [data, profitFilter, franquiaFilter, statusFilter, tipoFilter, faixaFilter, inicioDe, fimAte]);
 
   const porProfit = useMemo(() => {
-    const map = new Map<string, { clientes: number; ativos: number; mrr: number }>();
-    filtered.forEach((d) => {
-      const cur = map.get(d.profit) ?? { clientes: 0, ativos: 0, mrr: 0 };
-      cur.clientes += 1;
-      if (d.ativo) {
-        cur.ativos += 1;
-        cur.mrr += d.valorMensal ?? 0;
+    const map = new Map<
+      string,
+      {
+        clientes: number;
+        ativosMRR: number;
+        ativosTCV: number;
+        totalAtivos: number;
+        mrr: number;
+        tcv: number;
       }
+    >();
+
+    filtered.forEach((d) => {
+      const cur = map.get(d.profit) ?? {
+        clientes: 0,
+        ativosMRR: 0,
+        ativosTCV: 0,
+        totalAtivos: 0,
+        mrr: 0,
+        tcv: 0,
+      };
+
+      cur.clientes++;
+
+      if (d.ativo) {
+        if (d.tipoContrato.toUpperCase() === "MENSAL") {
+          cur.ativosMRR++;
+          cur.mrr += d.valorMensal ?? 0;
+        } else {
+          cur.ativosTCV++;
+          cur.tcv += d.valorMensal ?? 0;
+        }
+        cur.totalAtivos++;
+      }
+
       map.set(d.profit, cur);
     });
+
     return Array.from(map.entries())
       .map(([profit, v]) => ({
         profit,
-        ...v,
-        ticketMedio: v.ativos > 0 ? v.mrr / v.ativos : 0,
+        clientes: v.clientes,
+        ativosMRR: v.ativosMRR,
+        ativosTCV: v.ativosTCV,
+        totalAtivos: v.totalAtivos,
+        mrr: v.mrr,
+        tcv: v.tcv,
+        ticketMedioMRR:
+          v.ativosMRR > 0 ? v.mrr / v.ativosMRR : 0,
+        ticketMedioTCV:
+          v.ativosTCV > 0 ? v.tcv / v.ativosTCV : 0,
       }))
-      .sort((a, b) => b.mrr - a.mrr);
+      .sort((a, b) => (b.mrr + b.tcv) - (a.mrr + a.tcv));
   }, [filtered]);
 
   const totalProfits = porProfit.length;
   const totalMrr = porProfit.reduce((s, p) => s + p.mrr, 0);
-  const totalAtivos = porProfit.reduce((s, p) => s + p.ativos, 0);
+  const totalAtivosMRR = porProfit.reduce((s, p) => s + p.ativosMRR, 0);
+  const totalAtivosTCV = porProfit.reduce((s, p) => s + p.ativosTCV, 0);
   const totalClientes = porProfit.reduce((s, p) => s + p.clientes, 0);
   const receitaMediaPorProfit = totalProfits > 0 ? totalMrr / totalProfits : 0;
   const clientesMediosPorProfit = totalProfits > 0 ? totalClientes / totalProfits : 0;
-  const ticketMedioGeral = totalAtivos > 0 ? totalMrr / totalAtivos : 0;
+  const ticketMedioGeral = totalAtivosMRR > 0 ? totalMrr / totalAtivosMRR : 0;
 
   const participacao = useMemo(
     () =>
@@ -241,7 +278,7 @@ function CarteiraProfitsPage() {
         {/* Charts row 2 */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Clientes por Profit</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Clientes Ativos (MRR + TCV) por Profit</CardTitle></CardHeader>
             <CardContent className="h-[380px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 48 }}>
@@ -250,8 +287,8 @@ function CarteiraProfitsPage() {
                   <YAxis type="category" dataKey="profit" width={130} fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="ativos" name="Ativos" fill="oklch(0.7 0.18 145)" radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="ativos" position="right" fontSize={11} />
+                  <Bar dataKey="totalAtivos" name="Clientes Ativos" fill="oklch(0.7 0.18 145)" radius={[0, 4, 4, 0]}>
+                    <LabelList dataKey="totalAtivos" position="right" fontSize={11} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -259,7 +296,7 @@ function CarteiraProfitsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Ticket Médio por Profit</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Ticket Médio (MRR) por Profit</CardTitle></CardHeader>
             <CardContent className="h-[380px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 72 }}>
@@ -267,8 +304,8 @@ function CarteiraProfitsPage() {
                   <XAxis type="number" fontSize={11} tickFormatter={(v) => brl(v)} />
                   <YAxis type="category" dataKey="profit" width={130} fontSize={11} />
                   <Tooltip formatter={(v: number) => brlFull(v)} />
-                  <Bar dataKey="ticketMedio" fill="oklch(0.78 0.15 80)" radius={[0, 4, 4, 0]} name="Ticket Médio">
-                    <LabelList dataKey="ticketMedio" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
+                  <Bar dataKey="ticketMedioMRR" fill="oklch(0.78 0.15 80)" radius={[0, 4, 4, 0]} name="Ticket Médio">
+                    <LabelList dataKey="ticketMedioMRR" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -289,7 +326,8 @@ function CarteiraProfitsPage() {
                   <TableHead className="text-right">Clientes</TableHead>
                   <TableHead className="text-right">Ativos</TableHead>
                   <TableHead className="text-right">MRR</TableHead>
-                  <TableHead className="text-right">Ticket Médio</TableHead>
+                  <TableHead className="text-right">Ticket Médio MRR</TableHead>
+                  <TableHead className="text-right">Ticket Médio TCV</TableHead>
                   <TableHead className="text-right">Participação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -300,9 +338,10 @@ function CarteiraProfitsPage() {
                     <TableRow key={p.profit}>
                       <TableCell className="font-medium">{p.profit}</TableCell>
                       <TableCell className="text-right tabular-nums">{p.clientes.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell className="text-right tabular-nums">{p.ativos.toLocaleString("pt-BR")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{(p.ativosMRR + p.ativosTCV).toLocaleString("pt-BR")}</TableCell>
                       <TableCell className="text-right tabular-nums">{brl(p.mrr)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(p.ticketMedio)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{brl(p.ticketMedioMRR)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{brl(p.ticketMedioTCV)}</TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">{part.toFixed(1)}%</TableCell>
                     </TableRow>
                   );
