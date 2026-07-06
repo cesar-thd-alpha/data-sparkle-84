@@ -33,9 +33,9 @@ const clientesQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Carteira — Dashboard Executivo" },
+      { title: "Carteira Geral — Dashboard Executivo" },
       { name: "description", content: "Visão executiva da carteira de clientes: MRR, distribuição, contratos e riscos." },
-      { property: "og:title", content: "Carteira — Dashboard Executivo" },
+      { property: "og:title", content: "Carteira Geral — Dashboard Executivo" },
       { property: "og:description", content: "Visão executiva da carteira de clientes." },
     ],
   }),
@@ -400,6 +400,7 @@ function CarteiraDashboard() {
           </div>
           <nav className="flex gap-2">
             <Link to="/"><Button variant="secondary" size="sm">Carteira Geral</Button></Link>
+            <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
             <Link to="/profits"><Button variant="ghost" size="sm">Indicadores Profits</Button></Link>
             <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
           </nav>
