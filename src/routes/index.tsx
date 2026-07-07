@@ -425,22 +425,24 @@ function CarteiraDashboard() {
     (end.getMonth() - start.getMonth());
 
   const lifetimeMedio = useMemo(() => {
-    const valores = filtered
-      .filter(d => d.inicioContrato)
-      .map(d => {
-        const inicio = new Date(d.inicioContrato!);
-        const fim =
-          d.churn && d.fimContrato
-            ? new Date(d.fimContrato)
-            : new Date();
-
-        return diffMonths(inicio, fim);
-      });
-
+    const refEnd = refBounds ? new Date(refBounds.end) : new Date();
+    const valores: number[] = [];
+    filtered.forEach((d) => {
+      if (!d.inicioContrato) return;
+      const inicio = new Date(d.inicioContrato);
+      if (isNaN(inicio.getTime())) return;
+      if (d.churn) {
+        if (!d.fimContrato) return; // sem data de saída => ignora
+        const fim = new Date(d.fimContrato);
+        if (isNaN(fim.getTime())) return;
+        valores.push(diffMonths(inicio, fim));
+      } else if (d.ativo) {
+        valores.push(diffMonths(inicio, refEnd));
+      }
+    });
     if (!valores.length) return 0;
-
     return valores.reduce((a, b) => a + b, 0) / valores.length;
-  }, [filtered]);
+  }, [filtered, refBounds]);
 
   return (
     <div className="min-h-screen bg-muted/30">
