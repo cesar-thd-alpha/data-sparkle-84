@@ -94,8 +94,7 @@ function CarteiraDashboard() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [clienteSearch, setClienteSearch] = useState("");
-  const [inicioDe, setInicioDe] = useState<string>("");
-  const [fimAte, setFimAte] = useState<string>("");
+  const [mesRef, setMesRef] = useState<string>(""); // "YYYY-MM"
 
   const opts = useMemo(() => {
     const uniq = (k: keyof ClienteRow) =>
@@ -110,10 +109,31 @@ function CarteiraDashboard() {
     };
   }, [data]);
 
+  const refBounds = useMemo(() => {
+    if (!mesRef) return null;
+    const [y, m] = mesRef.split("-").map(Number);
+    if (!y || !m) return null;
+    const start = Date.UTC(y, m - 1, 1, 0, 0, 0);
+    const end = Date.UTC(y, m, 0, 23, 59, 59);
+    return { start, end };
+  }, [mesRef]);
+
+  const inRef = React.useCallback(
+    (d: ClienteRow) => {
+      if (!refBounds) return true;
+      if (!d.inicioContrato) return false;
+      const t = new Date(d.inicioContrato).getTime();
+      if (isNaN(t)) return false;
+      const isMensal = d.tipoContrato.toUpperCase() === "MENSAL";
+      return isMensal
+        ? t <= refBounds.end
+        : t >= refBounds.start && t <= refBounds.end;
+    },
+    [refBounds],
+  );
+
   const filtered = useMemo(() => {
     const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
-    const inicioDeTs = inicioDe ? new Date(inicioDe + "T00:00:00").getTime() : null;
-    const fimAteTs = fimAte ? new Date(fimAte + "T23:59:59").getTime() : null;
     return data.filter(
       (d) =>
         match(profitFilter, d.profit) &&
@@ -122,12 +142,9 @@ function CarteiraDashboard() {
         match(planoFilter, d.plano) &&
         match(tipoFilter, d.tipoContrato) &&
         match(faixaFilter, d.faixaVencimento) &&
-        (inicioDeTs === null ||
-          (d.inicioContrato ? new Date(d.inicioContrato).getTime() >= inicioDeTs : false)) &&
-        (fimAteTs === null ||
-          (d.fimContrato ? new Date(d.fimContrato).getTime() <= fimAteTs : false)),
+        inRef(d),
     );
-  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inicioDe, fimAte]);
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inRef]);
 
   // KPIs
   const totalClientes = filtered.length;
@@ -348,8 +365,7 @@ function CarteiraDashboard() {
     setPlanoFilter([]);
     setTipoFilter([]);
     setFaixaFilter([]);
-    setInicioDe("");
-    setFimAte("");
+    setMesRef("");
     setSortKey(null);
   };
 
@@ -405,21 +421,12 @@ function CarteiraDashboard() {
             <FilterSelect label="Tipo Contrato" value={tipoFilter} onChange={setTipoFilter} options={opts.tipo} />
             <FilterSelect label="Vencimento" value={faixaFilter} onChange={setFaixaFilter} options={opts.faixa} />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Início a partir de</label>
+              <label className="text-xs font-medium text-muted-foreground">Mês/Ano de Referência</label>
               <Input
-                type="date"
-                value={inicioDe}
-                onChange={(e) => setInicioDe(e.target.value)}
-                className="h-9 w-[160px]"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Fim até</label>
-              <Input
-                type="date"
-                value={fimAte}
-                onChange={(e) => setFimAte(e.target.value)}
-                className="h-9 w-[160px]"
+                type="month"
+                value={mesRef}
+                onChange={(e) => setMesRef(e.target.value)}
+                className="h-9 w-[180px]"
               />
             </div>
             <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
