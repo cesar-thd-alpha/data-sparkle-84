@@ -118,16 +118,32 @@ function CarteiraDashboard() {
     return { start, end };
   }, [mesRef]);
 
-  const inRef = React.useCallback(
+  // Snapshot da carteira no mês selecionado (independente do tipo de contrato).
+  const inCarteira = React.useCallback(
     (d: ClienteRow) => {
+      if (!refBounds) return true;
+      if (!d.inicioContrato) return false;
+      const ini = new Date(d.inicioContrato).getTime();
+      if (isNaN(ini)) return false;
+      if (ini > refBounds.end) return false;
+      if (!d.fimContrato) return true;
+      const fim = new Date(d.fimContrato).getTime();
+      if (isNaN(fim)) return true;
+      return fim >= refBounds.start;
+    },
+    [refBounds],
+  );
+
+  // Fluxo comercial: vendas TCV realizadas no mês selecionado.
+  const tcvNoMes = React.useCallback(
+    (d: ClienteRow) => {
+      if (d.tipoContrato.toUpperCase() === "MENSAL") return false;
+      if (!d.ativo) return false;
       if (!refBounds) return true;
       if (!d.inicioContrato) return false;
       const t = new Date(d.inicioContrato).getTime();
       if (isNaN(t)) return false;
-      const isMensal = d.tipoContrato.toUpperCase() === "MENSAL";
-      return isMensal
-        ? t <= refBounds.end
-        : t >= refBounds.start && t <= refBounds.end;
+      return t >= refBounds.start && t <= refBounds.end;
     },
     [refBounds],
   );
@@ -142,25 +158,60 @@ function CarteiraDashboard() {
         match(planoFilter, d.plano) &&
         match(tipoFilter, d.tipoContrato) &&
         match(faixaFilter, d.faixaVencimento) &&
-        inRef(d),
+        inCarteira(d),
     );
-  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inRef]);
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inCarteira]);
+
+  // Base específica TCV (não afetada pelos demais filtros de carteira, mantém filtros comuns).
+  const tcvFiltered = useMemo(() => {
+    const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
+    return data.filter(
+      (d) =>
+        match(profitFilter, d.profit) &&
+        match(franquiaFilter, d.franquia) &&
+        match(statusFilter, d.status) &&
+        match(planoFilter, d.plano) &&
+        match(tipoFilter, d.tipoContrato) &&
+        match(faixaFilter, d.faixaVencimento) &&
+        tcvNoMes(d),
+    );
+  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, tcvNoMes]);
 
   // KPIs
   const totalClientes = filtered.length;
   const ativos = filtered.filter((d) => d.ativo).length;
-  const ativosTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").length;
   const ativosMRR = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").length;
   const churn = filtered.filter((d) => d.churn).length;
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const mrrTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const contratoTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
+
+  // TCV — fluxo comercial (vendas do mês)
+  const ativosTCV = tcvFiltered.length;
+  const contratoTCV = tcvFiltered.reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedioTCV = ativosTCV > 0 ? contratoTCV / ativosTCV : 0;
 
-  const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
+  // Taxa de Churn
+  const churnRate = useMemo(() => {
+    if (refBounds) {
+      const churnsNoMes = filtered.filter((d) => {
+        if (!d.churn || !d.fimContrato) return false;
+        const t = new Date(d.fimContrato).getTime();
+        return !isNaN(t) && t >= refBounds.start && t <= refBounds.end;
+      }).length;
+      const baseInicio = filtered.filter((d) => {
+        if (!d.inicioContrato) return false;
+        const ini = new Date(d.inicioContrato).getTime();
+        if (isNaN(ini) || ini >= refBounds.start) return false;
+        if (!d.fimContrato) return true;
+        const fim = new Date(d.fimContrato).getTime();
+        return isNaN(fim) || fim >= refBounds.start;
+      }).length;
+      return baseInicio > 0 ? (churnsNoMes / baseInicio) * 100 : 0;
+    }
+    return totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
+  }, [filtered, refBounds, churn, totalClientes]);
   const vencendo30 = filtered.filter(
     (d) => d.ativo && d.vencimentoDias !== null && d.vencimentoDias >= 0 && d.vencimentoDias <= 30,
   ).length;
@@ -374,22 +425,24 @@ function CarteiraDashboard() {
     (end.getMonth() - start.getMonth());
 
   const lifetimeMedio = useMemo(() => {
-    const valores = filtered
-      .filter(d => d.inicioContrato)
-      .map(d => {
-        const inicio = new Date(d.inicioContrato!);
-        const fim =
-          d.churn && d.fimContrato
-            ? new Date(d.fimContrato)
-            : new Date();
-
-        return diffMonths(inicio, fim);
-      });
-
+    const refEnd = refBounds ? new Date(refBounds.end) : new Date();
+    const valores: number[] = [];
+    filtered.forEach((d) => {
+      if (!d.inicioContrato) return;
+      const inicio = new Date(d.inicioContrato);
+      if (isNaN(inicio.getTime())) return;
+      if (d.churn) {
+        if (!d.fimContrato) return; // sem data de saída => ignora
+        const fim = new Date(d.fimContrato);
+        if (isNaN(fim.getTime())) return;
+        valores.push(diffMonths(inicio, fim));
+      } else if (d.ativo) {
+        valores.push(diffMonths(inicio, refEnd));
+      }
+    });
     if (!valores.length) return 0;
-
     return valores.reduce((a, b) => a + b, 0) / valores.length;
-  }, [filtered]);
+  }, [filtered, refBounds]);
 
   return (
     <div className="min-h-screen bg-muted/30">
