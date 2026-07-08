@@ -51,10 +51,8 @@ export const getClientes = createServerFn({ method: "GET" }).handler(
       result = await run(false);
     }
 
-    const toNum = (v: unknown) =>
-      v === null || v === undefined || v === "" ? null : Number(v);
-    const toStr = (v: unknown) =>
-      v === null || v === undefined ? "" : String(v).trim();
+    const toNum = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
+    const toStr = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
     const toDate = (v: unknown) => {
       if (!v) return null;
       const d = v instanceof Date ? v : new Date(String(v));

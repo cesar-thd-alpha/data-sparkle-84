@@ -3,19 +3,38 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LabelList,
 } from "recharts";
 import { getMetrics, type Metric } from "@/lib/metrics.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
 const metricsQuery = queryOptions({
@@ -27,9 +46,15 @@ export const Route = createFileRoute("/performance")({
   head: () => ({
     meta: [
       { title: "Dashboard de Performance" },
-      { name: "description", content: "Acompanhe metas, status e desempenho por responsável e categoria." },
+      {
+        name: "description",
+        content: "Acompanhe metas, status e desempenho por responsável e categoria.",
+      },
       { property: "og:title", content: "Dashboard de Performance" },
-      { property: "og:description", content: "Acompanhe metas, status e desempenho por responsável e categoria." },
+      {
+        property: "og:description",
+        content: "Acompanhe metas, status e desempenho por responsável e categoria.",
+      },
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(metricsQuery),
@@ -42,13 +67,17 @@ export const Route = createFileRoute("/performance")({
 
 const STATUS_COLORS: Record<string, string> = {
   "No Alvo": "oklch(0.7 0.18 145)",
-  "Fora": "oklch(0.65 0.22 25)",
+  Fora: "oklch(0.65 0.22 25)",
   "Sem Dado": "oklch(0.7 0.04 260)",
-  "Avaliar": "oklch(0.78 0.15 80)",
+  Avaliar: "oklch(0.78 0.15 80)",
 };
 const FALLBACK_COLORS = [
-  "oklch(0.6 0.2 250)", "oklch(0.65 0.18 180)", "oklch(0.7 0.18 145)",
-  "oklch(0.78 0.15 80)", "oklch(0.65 0.22 25)", "oklch(0.6 0.22 310)",
+  "oklch(0.6 0.2 250)",
+  "oklch(0.65 0.18 180)",
+  "oklch(0.7 0.18 145)",
+  "oklch(0.78 0.15 80)",
+  "oklch(0.65 0.22 25)",
+  "oklch(0.6 0.22 310)",
 ];
 
 const ALL = "__all__";
@@ -124,12 +153,17 @@ function Dashboard() {
   );
 
   const porCategoria = useMemo(() => {
-    type Row = { name: string; "No Alvo": number; Fora: number; "Sem Dado": number; Avaliar: number };
+    type Row = {
+      name: string;
+      "No Alvo": number;
+      Fora: number;
+      "Sem Dado": number;
+      Avaliar: number;
+    };
     const map = new Map<string, Row>();
     filtered.forEach((d) => {
       const k = d.categoria || "—";
-      const cur: Row =
-        map.get(k) ?? { name: k, "No Alvo": 0, Fora: 0, "Sem Dado": 0, Avaliar: 0 };
+      const cur: Row = map.get(k) ?? { name: k, "No Alvo": 0, Fora: 0, "Sem Dado": 0, Avaliar: 0 };
       const s = (d.status || "Sem Dado") as keyof Omit<Row, "name">;
       if (s === "No Alvo" || s === "Fora" || s === "Sem Dado" || s === "Avaliar") {
         cur[s] += 1;
@@ -138,7 +172,10 @@ function Dashboard() {
     });
     return Array.from(map.values()).sort(
       (a, b) =>
-        b["No Alvo"] + b.Fora + b["Sem Dado"] + b.Avaliar -
+        b["No Alvo"] +
+        b.Fora +
+        b["Sem Dado"] +
+        b.Avaliar -
         (a["No Alvo"] + a.Fora + a["Sem Dado"] + a.Avaliar),
     );
   }, [filtered]);
@@ -172,10 +209,26 @@ function Dashboard() {
             </p>
           </div>
           <nav className="flex gap-2">
-            <Link to="/"><Button variant="ghost" size="sm">Carteira Geral</Button></Link>
-           <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
-            <Link to="/profits"><Button variant="ghost" size="sm">Indicadores Profits</Button></Link>
-            <Link to="/performance"><Button variant="secondary" size="sm">Performance</Button></Link>
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                Carteira Geral
+              </Button>
+            </Link>
+            <Link to="/carteira-profits">
+              <Button variant="ghost" size="sm">
+                Carteira por Profits
+              </Button>
+            </Link>
+            <Link to="/profits">
+              <Button variant="ghost" size="sm">
+                Indicadores Profits
+              </Button>
+            </Link>
+            <Link to="/performance">
+              <Button variant="secondary" size="sm">
+                Performance
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -227,20 +280,33 @@ function Dashboard() {
         {/* Charts row 1 */}
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">% Metas Atingidas por Responsável</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">% Metas Atingidas por Responsável</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porResponsavel} layout="vertical" margin={{ left: 12, right: 48 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} fontSize={12} />
+                  <XAxis
+                    type="number"
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                    fontSize={12}
+                  />
                   <YAxis type="category" dataKey="resp" width={90} fontSize={12} />
                   <Tooltip
-                    formatter={(v: number, _n, p) =>
-                      [`${v.toFixed(1)}% (${p.payload.noAlvo}/${p.payload.total})`, "No Alvo"]
-                    }
+                    formatter={(v: number, _n, p) => [
+                      `${v.toFixed(1)}% (${p.payload.noAlvo}/${p.payload.total})`,
+                      "No Alvo",
+                    ]}
                   />
                   <Bar dataKey="pct" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="pct" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} fontSize={11} />
+                    <LabelList
+                      dataKey="pct"
+                      position="right"
+                      formatter={(v: number) => `${v.toFixed(1)}%`}
+                      fontSize={11}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -248,7 +314,9 @@ function Dashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Distribuição por Status</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Distribuição por Status</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -268,7 +336,9 @@ function Dashboard() {
         {/* Charts row 2 */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Status por Categoria</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Status por Categoria</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porCategoria}>
@@ -287,7 +357,9 @@ function Dashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Indicadores por Cadência</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Indicadores por Cadência</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porCadencia} layout="vertical" margin={{ left: 24, right: 24 }}>
@@ -307,9 +379,7 @@ function Dashboard() {
         {/* Detail table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Indicadores ({filtered.length})
-            </CardTitle>
+            <CardTitle className="text-base">Indicadores ({filtered.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[420px] w-full">
@@ -356,15 +426,7 @@ function Dashboard() {
   );
 }
 
-function Kpi({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  accent?: string;
-}) {
+function Kpi({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <Card>
       <CardContent className="pt-5">
@@ -401,7 +463,9 @@ function FilterSelect({
         <SelectContent>
           <SelectItem value={ALL}>Todos</SelectItem>
           {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

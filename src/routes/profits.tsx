@@ -3,7 +3,16 @@ import * as React from "react";
 import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, ReferenceLine, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
+  ReferenceLine,
+  Cell,
 } from "recharts";
 import { ArrowUpDown, AlertTriangle } from "lucide-react";
 import { getCarteira, type CarteiraRow } from "@/lib/carteira.functions";
@@ -11,14 +20,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
 const carteiraQuery = queryOptions({
@@ -42,7 +63,14 @@ export const Route = createFileRoute("/profits")({
 });
 
 const ALL = "__all__";
-type SortKey = "profit" | "franquia" | "clientes" | "roasMedio" | "alvoRoas" | "desvioRoas" | "statusRoas";
+type SortKey =
+  | "profit"
+  | "franquia"
+  | "clientes"
+  | "roasMedio"
+  | "alvoRoas"
+  | "desvioRoas"
+  | "statusRoas";
 
 const STATUS_ORDER: Record<CarteiraRow["statusRoas"], number> = {
   Fora: 0,
@@ -57,7 +85,9 @@ const STATUS_DOT: Record<CarteiraRow["statusRoas"], string> = {
 };
 
 const fmtNum = (v: number | null, digits = 2) =>
-  v === null || Number.isNaN(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  v === null || Number.isNaN(v)
+    ? "—"
+    : v.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 function StatusBadge({ status }: { status: CarteiraRow["statusRoas"] }) {
   const cls =
@@ -77,13 +107,29 @@ function StatusBadge({ status }: { status: CarteiraRow["statusRoas"] }) {
 function RowTooltipContent({ d }: { d: CarteiraRow }) {
   return (
     <div className="space-y-0.5 text-xs">
-      <div><span className="text-muted-foreground">Profit:</span> {d.profit}</div>
-      <div><span className="text-muted-foreground">Franquia:</span> {d.franquia}</div>
-      <div><span className="text-muted-foreground">Clientes:</span> {d.clientes.toLocaleString("pt-BR")}</div>
-      <div><span className="text-muted-foreground">ROAS Médio:</span> {fmtNum(d.roasMedio)}</div>
-      <div><span className="text-muted-foreground">Alvo:</span> {fmtNum(d.alvoRoas)}</div>
-      <div><span className="text-muted-foreground">Desvio:</span> {fmtNum(d.desvioRoas)}</div>
-      <div><span className="text-muted-foreground">Status:</span> {STATUS_DOT[d.statusRoas]} {d.statusRoas}</div>
+      <div>
+        <span className="text-muted-foreground">Profit:</span> {d.profit}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Franquia:</span> {d.franquia}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Clientes:</span>{" "}
+        {d.clientes.toLocaleString("pt-BR")}
+      </div>
+      <div>
+        <span className="text-muted-foreground">ROAS Médio:</span> {fmtNum(d.roasMedio)}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Alvo:</span> {fmtNum(d.alvoRoas)}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Desvio:</span> {fmtNum(d.desvioRoas)}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Status:</span> {STATUS_DOT[d.statusRoas]}{" "}
+        {d.statusRoas}
+      </div>
     </div>
   );
 }
@@ -152,11 +198,20 @@ function CarteiraPage() {
   );
 
   const roasPorProfit = useMemo(() => {
-    const map = new Map<string, { sum: number; count: number; alvoSum: number; alvoCount: number }>();
+    const map = new Map<
+      string,
+      { sum: number; count: number; alvoSum: number; alvoCount: number }
+    >();
     filtered.forEach((d) => {
       const cur = map.get(d.profit) ?? { sum: 0, count: 0, alvoSum: 0, alvoCount: 0 };
-      if (d.roasMedio !== null) { cur.sum += d.roasMedio; cur.count += 1; }
-      if (d.alvoRoas !== null) { cur.alvoSum += d.alvoRoas; cur.alvoCount += 1; }
+      if (d.roasMedio !== null) {
+        cur.sum += d.roasMedio;
+        cur.count += 1;
+      }
+      if (d.alvoRoas !== null) {
+        cur.alvoSum += d.alvoRoas;
+        cur.alvoCount += 1;
+      }
       map.set(d.profit, cur);
     });
     return Array.from(map.entries())
@@ -215,207 +270,349 @@ function CarteiraPage() {
 
   return (
     <TooltipProvider delayDuration={150}>
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Profits</h1>
-            <p className="text-sm text-muted-foreground">
-              Distribuição de clientes por Profit e Franquia.
-            </p>
+      <div className="min-h-screen bg-muted/30">
+        <header className="border-b bg-card">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Profits</h1>
+              <p className="text-sm text-muted-foreground">
+                Distribuição de clientes por Profit e Franquia.
+              </p>
+            </div>
+            <nav className="flex gap-2">
+              <Link to="/">
+                <Button variant="ghost" size="sm">
+                  Carteira Geral
+                </Button>
+              </Link>
+              <Link to="/carteira-profits">
+                <Button variant="ghost" size="sm">
+                  Carteira por Profits
+                </Button>
+              </Link>
+              <Link to="/profits">
+                <Button variant="secondary" size="sm">
+                  Indicadores Profits
+                </Button>
+              </Link>
+              <Link to="/performance">
+                <Button variant="ghost" size="sm">
+                  Performance
+                </Button>
+              </Link>
+            </nav>
           </div>
-          <nav className="flex gap-2">
-            <Link to="/"><Button variant="ghost" size="sm">Carteira Geral</Button></Link>
-            <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
-            <Link to="/profits"><Button variant="secondary" size="sm">Indicadores Profits</Button></Link>
-            <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
-          </nav>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto max-w-[1400px] space-y-6 px-6 py-6">
-        <Card>
-          <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-            <FilterSelect label="Profit" value={profitFilter} onChange={setProfitFilter} options={opts.profit} />
-            <FilterSelect label="Franquia" value={franquiaFilter} onChange={setFranquiaFilter} options={opts.franquia} />
-            <FilterSelect label="Status ROAS" value={statusFilter} onChange={setStatusFilter} options={["No Alvo", "Fora", "Sem Dado"]} />
-            <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
-              Limpar filtros
-            </Button>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <Kpi label="Total de Clientes" value={totalClientes.toLocaleString("pt-BR")} accent="oklch(0.6 0.2 250)" />
-          <Kpi label="Total de Franquias" value={totalFranquias} accent="oklch(0.65 0.18 180)" />
-          <Kpi label="Profit Managers" value={totalProfit} accent="oklch(0.7 0.18 145)" />
-          <Kpi label="Média Clientes/Franquia" value={mediaPorFranquia.toFixed(1)} accent="oklch(0.78 0.15 80)" />
-          <Kpi
-            label="Franquias abaixo do ROAS alvo"
-            value={<span className="inline-flex items-center gap-2">🔴 {foraDoAlvo}</span>}
-            accent="oklch(0.6 0.22 25)"
-          />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
+        <main className="mx-auto max-w-[1400px] space-y-6 px-6 py-6">
           <Card>
-            <CardHeader><CardTitle className="text-base">Clientes por Profit</CardTitle></CardHeader>
-            <CardContent className="h-[420px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 48 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={11} allowDecimals={false} />
-                  <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
-                  <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
-                  <Bar dataKey="clientes" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="clientes" position="right" fontSize={11} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent className="flex flex-wrap items-end gap-3 pt-6">
+              <FilterSelect
+                label="Profit"
+                value={profitFilter}
+                onChange={setProfitFilter}
+                options={opts.profit}
+              />
+              <FilterSelect
+                label="Franquia"
+                value={franquiaFilter}
+                onChange={setFranquiaFilter}
+                options={opts.franquia}
+              />
+              <FilterSelect
+                label="Status ROAS"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={["No Alvo", "Fora", "Sem Dado"]}
+              />
+              <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
+                Limpar filtros
+              </Button>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="text-base">Top 10 Franquias por Clientes</CardTitle></CardHeader>
-            <CardContent className="h-[420px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topFranquias} layout="vertical" margin={{ left: 12, right: 48 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={11} allowDecimals={false} />
-                  <YAxis type="category" dataKey="franquia" width={160} fontSize={11} />
-                  <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
-                  <Bar dataKey="clientes" fill="oklch(0.65 0.18 180)" radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="clientes" position="right" fontSize={11} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            <Kpi
+              label="Total de Clientes"
+              value={totalClientes.toLocaleString("pt-BR")}
+              accent="oklch(0.6 0.2 250)"
+            />
+            <Kpi label="Total de Franquias" value={totalFranquias} accent="oklch(0.65 0.18 180)" />
+            <Kpi label="Profit Managers" value={totalProfit} accent="oklch(0.7 0.18 145)" />
+            <Kpi
+              label="Média Clientes/Franquia"
+              value={mediaPorFranquia.toFixed(1)}
+              accent="oklch(0.78 0.15 80)"
+            />
+            <Kpi
+              label="Franquias abaixo do ROAS alvo"
+              value={<span className="inline-flex items-center gap-2">🔴 {foraDoAlvo}</span>}
+              accent="oklch(0.6 0.22 25)"
+            />
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                Franquias abaixo do ROAS esperado
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[420px]">
-              {franquiasFora.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  Nenhuma franquia fora do alvo.
-                </div>
-              ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Clientes por Profit</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[420px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={franquiasFora} layout="vertical" margin={{ left: 12, right: 60 }}>
+                  <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 48 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" fontSize={11} />
-                    <YAxis type="category" dataKey="franquia" width={160} fontSize={11} />
-                    <Tooltip
-                      content={({ active, payload }) =>
-                        active && payload?.[0] ? (
-                          <div className="rounded-md border bg-background p-2 shadow">
-                            <RowTooltipContent d={(payload[0].payload as { row: CarteiraRow }).row} />
-                          </div>
-                        ) : null
-                      }
-                    />
-                    <Bar dataKey="desvio" fill="oklch(0.6 0.22 25)" radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="desvio" position="right" fontSize={11} formatter={(v: number) => fmtNum(v)} />
+                    <XAxis type="number" fontSize={11} allowDecimals={false} />
+                    <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
+                    <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                    <Bar dataKey="clientes" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]}>
+                      <LabelList dataKey="clientes" position="right" fontSize={11} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Top 10 Franquias por Clientes</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[420px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topFranquias} layout="vertical" margin={{ left: 12, right: 48 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" fontSize={11} allowDecimals={false} />
+                    <YAxis type="category" dataKey="franquia" width={160} fontSize={11} />
+                    <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                    <Bar dataKey="clientes" fill="oklch(0.65 0.18 180)" radius={[0, 4, 4, 0]}>
+                      <LabelList dataKey="clientes" position="right" fontSize={11} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  Franquias abaixo do ROAS esperado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[420px]">
+                {franquiasFora.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    Nenhuma franquia fora do alvo.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={franquiasFora}
+                      layout="vertical"
+                      margin={{ left: 12, right: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" fontSize={11} />
+                      <YAxis type="category" dataKey="franquia" width={160} fontSize={11} />
+                      <Tooltip
+                        content={({ active, payload }) =>
+                          active && payload?.[0] ? (
+                            <div className="rounded-md border bg-background p-2 shadow">
+                              <RowTooltipContent
+                                d={(payload[0].payload as { row: CarteiraRow }).row}
+                              />
+                            </div>
+                          ) : null
+                        }
+                      />
+                      <Bar dataKey="desvio" fill="oklch(0.6 0.22 25)" radius={[0, 4, 4, 0]}>
+                        <LabelList
+                          dataKey="desvio"
+                          position="right"
+                          fontSize={11}
+                          formatter={(v: number) => fmtNum(v)}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">ROAS Médio por Profit</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[420px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={roasPorProfit} margin={{ left: 12, right: 24, top: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="profit"
+                      fontSize={11}
+                      interval={0}
+                      angle={-25}
+                      textAnchor="end"
+                      height={70}
+                    />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: number) => fmtNum(v)} />
+                    <ReferenceLine
+                      y={alvoMedio}
+                      stroke="oklch(0.6 0.22 25)"
+                      strokeDasharray="4 4"
+                      label={{
+                        value: `Alvo médio ${fmtNum(alvoMedio)}`,
+                        position: "insideTopRight",
+                        fontSize: 10,
+                        fill: "oklch(0.6 0.22 25)",
+                      }}
+                    />
+                    <Bar dataKey="roas" radius={[4, 4, 0, 0]}>
+                      {roasPorProfit.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={
+                            entry.roas >= alvoMedio ? "oklch(0.65 0.18 150)" : "oklch(0.6 0.22 25)"
+                          }
+                        />
+                      ))}
+                      <LabelList
+                        dataKey="roas"
+                        position="top"
+                        fontSize={10}
+                        formatter={(v: number) => fmtNum(v)}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">ROAS Médio por Profit</CardTitle></CardHeader>
-            <CardContent className="h-[420px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={roasPorProfit} margin={{ left: 12, right: 24, top: 12 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="profit" fontSize={11} interval={0} angle={-25} textAnchor="end" height={70} />
-                  <YAxis fontSize={11} />
-                  <Tooltip formatter={(v: number) => fmtNum(v)} />
-                  <ReferenceLine
-                    y={alvoMedio}
-                    stroke="oklch(0.6 0.22 25)"
-                    strokeDasharray="4 4"
-                    label={{ value: `Alvo médio ${fmtNum(alvoMedio)}`, position: "insideTopRight", fontSize: 10, fill: "oklch(0.6 0.22 25)" }}
-                  />
-                  <Bar dataKey="roas" radius={[4, 4, 0, 0]}>
-                    {roasPorProfit.map((entry, i) => (
-                      <Cell key={i} fill={entry.roas >= alvoMedio ? "oklch(0.65 0.18 150)" : "oklch(0.6 0.22 25)"} />
-                    ))}
-                    <LabelList dataKey="roas" position="top" fontSize={10} formatter={(v: number) => fmtNum(v)} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <CardHeader>
+              <CardTitle className="text-base">Detalhamento ({sortedRows.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[460px] w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableHead
+                        label="Profit"
+                        k="profit"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
+                      <SortableHead
+                        label="Franquia"
+                        k="franquia"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
+                      <SortableHead
+                        label="Clientes"
+                        k="clientes"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                        align="right"
+                      />
+                      <SortableHead
+                        label="ROAS Médio"
+                        k="roasMedio"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                        align="right"
+                      />
+                      <SortableHead
+                        label="Alvo"
+                        k="alvoRoas"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                        align="right"
+                      />
+                      <SortableHead
+                        label="Desvio"
+                        k="desvioRoas"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                        align="right"
+                      />
+                      <SortableHead
+                        label="Status"
+                        k="statusRoas"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedRows.map((d, i) => {
+                      const roasColor =
+                        d.roasMedio === null || d.alvoRoas === null
+                          ? "text-muted-foreground"
+                          : d.roasMedio >= d.alvoRoas
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-red-400";
+                      const desvioColor =
+                        d.desvioRoas === null
+                          ? "text-muted-foreground"
+                          : d.desvioRoas >= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-red-400";
+                      return (
+                        <UITooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <TableRow
+                              className={
+                                d.statusRoas === "Fora" ? "bg-red-500/5 hover:bg-red-500/10" : ""
+                              }
+                            >
+                              <TableCell className="font-medium">{d.profit}</TableCell>
+                              <TableCell>{d.franquia}</TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {d.clientes.toLocaleString("pt-BR")}
+                              </TableCell>
+                              <TableCell
+                                className={`text-right tabular-nums font-medium ${roasColor}`}
+                              >
+                                <span className="inline-flex items-center justify-end gap-1">
+                                  {d.statusRoas === "Fora" && (
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                  )}
+                                  {fmtNum(d.roasMedio)}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-muted-foreground">
+                                {fmtNum(d.alvoRoas)}
+                              </TableCell>
+                              <TableCell className={`text-right tabular-nums ${desvioColor}`}>
+                                {fmtNum(d.desvioRoas)}
+                              </TableCell>
+                              <TableCell>
+                                <StatusBadge status={d.statusRoas} />
+                              </TableCell>
+                            </TableRow>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <RowTooltipContent d={d} />
+                          </TooltipContent>
+                        </UITooltip>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </CardContent>
           </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Detalhamento ({sortedRows.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[460px] w-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableHead label="Profit" k="profit" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Franquia" k="franquia" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                    <SortableHead label="Clientes" k="clientes" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="ROAS Médio" k="roasMedio" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="Alvo" k="alvoRoas" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="Desvio" k="desvioRoas" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableHead label="Status" k="statusRoas" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedRows.map((d, i) => {
-                    const roasColor =
-                      d.roasMedio === null || d.alvoRoas === null
-                        ? "text-muted-foreground"
-                        : d.roasMedio >= d.alvoRoas
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-red-600 dark:text-red-400";
-                    const desvioColor =
-                      d.desvioRoas === null
-                        ? "text-muted-foreground"
-                        : d.desvioRoas >= 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-red-600 dark:text-red-400";
-                    return (
-                      <UITooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <TableRow className={d.statusRoas === "Fora" ? "bg-red-500/5 hover:bg-red-500/10" : ""}>
-                            <TableCell className="font-medium">{d.profit}</TableCell>
-                            <TableCell>{d.franquia}</TableCell>
-                            <TableCell className="text-right tabular-nums">{d.clientes.toLocaleString("pt-BR")}</TableCell>
-                            <TableCell className={`text-right tabular-nums font-medium ${roasColor}`}>
-                              <span className="inline-flex items-center justify-end gap-1">
-                                {d.statusRoas === "Fora" && <AlertTriangle className="h-3.5 w-3.5" />}
-                                {fmtNum(d.roasMedio)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">{fmtNum(d.alvoRoas)}</TableCell>
-                            <TableCell className={`text-right tabular-nums ${desvioColor}`}>{fmtNum(d.desvioRoas)}</TableCell>
-                            <TableCell><StatusBadge status={d.statusRoas} /></TableCell>
-                          </TableRow>
-                        </TooltipTrigger>
-                        <TooltipContent side="left"><RowTooltipContent d={d} /></TooltipContent>
-                      </UITooltip>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+        </main>
+      </div>
     </TooltipProvider>
   );
 }
@@ -424,7 +621,10 @@ function Kpi({ label, value, accent }: { label: string; value: React.ReactNode; 
   return (
     <Card>
       <CardContent className="pt-5">
-        <div className="text-3xl font-bold tracking-tight" style={accent ? { color: accent } : undefined}>
+        <div
+          className="text-3xl font-bold tracking-tight"
+          style={accent ? { color: accent } : undefined}
+        >
           {value}
         </div>
         <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
@@ -434,17 +634,29 @@ function Kpi({ label, value, accent }: { label: string; value: React.ReactNode; 
 }
 
 function FilterSelect({
-  label, value, onChange, options,
-}: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
   return (
     <div className="flex min-w-[200px] flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-9">
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>Todos</SelectItem>
           {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -453,7 +665,12 @@ function FilterSelect({
 }
 
 function SortableHead({
-  label, k, sortKey, sortDir, onClick, align,
+  label,
+  k,
+  sortKey,
+  sortDir,
+  onClick,
+  align,
 }: {
   label: string;
   k: SortKey;
