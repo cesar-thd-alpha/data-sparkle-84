@@ -13,6 +13,7 @@ import { Route as ProfitsRouteImport } from './routes/profits'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as CarteiraProfitsRouteImport } from './routes/carteira-profits'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiV1CesarSummaryRouteImport } from './routes/api/v1/cesar/summary'
 
 const ProfitsRoute = ProfitsRouteImport.update({
   id: '/profits',
@@ -34,18 +35,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CesarSummaryRoute = ApiV1CesarSummaryRouteImport.update({
+  id: '/api/v1/cesar/summary',
+  path: '/api/v1/cesar/summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
+  '/api/v1/cesar/summary': typeof ApiV1CesarSummaryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
+  '/api/v1/cesar/summary': typeof ApiV1CesarSummaryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,30 @@ export interface FileRoutesById {
   '/carteira-profits': typeof CarteiraProfitsRoute
   '/performance': typeof PerformanceRoute
   '/profits': typeof ProfitsRoute
+  '/api/v1/cesar/summary': typeof ApiV1CesarSummaryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/carteira-profits' | '/performance' | '/profits'
+  fullPaths:
+    | '/'
+    | '/carteira-profits'
+    | '/performance'
+    | '/profits'
+    | '/api/v1/cesar/summary'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/carteira-profits' | '/performance' | '/profits'
-  id: '__root__' | '/' | '/carteira-profits' | '/performance' | '/profits'
+  to:
+    | '/'
+    | '/carteira-profits'
+    | '/performance'
+    | '/profits'
+    | '/api/v1/cesar/summary'
+  id:
+    | '__root__'
+    | '/'
+    | '/carteira-profits'
+    | '/performance'
+    | '/profits'
+    | '/api/v1/cesar/summary'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +92,7 @@ export interface RootRouteChildren {
   CarteiraProfitsRoute: typeof CarteiraProfitsRoute
   PerformanceRoute: typeof PerformanceRoute
   ProfitsRoute: typeof ProfitsRoute
+  ApiV1CesarSummaryRoute: typeof ApiV1CesarSummaryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/cesar/summary': {
+      id: '/api/v1/cesar/summary'
+      path: '/api/v1/cesar/summary'
+      fullPath: '/api/v1/cesar/summary'
+      preLoaderRoute: typeof ApiV1CesarSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,7 +140,18 @@ const rootRouteChildren: RootRouteChildren = {
   CarteiraProfitsRoute: CarteiraProfitsRoute,
   PerformanceRoute: PerformanceRoute,
   ProfitsRoute: ProfitsRoute,
+  ApiV1CesarSummaryRoute: ApiV1CesarSummaryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
