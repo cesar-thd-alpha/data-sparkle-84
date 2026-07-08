@@ -110,6 +110,22 @@ const FALLBACK = [
   "oklch(0.6 0.22 310)",
 ];
 
+// Ponto-no-tempo: o contrato já tinha começado e ainda não tinha churnado
+// até refEndMs. Usada tanto pelos cards (quando há mês de referência)
+// quanto pelos gráficos de evolução, para garantir que os dois batam.
+function estaAtivoNoPeriodo(inicioMs: number, churnMs: number | null, refEndMs: number) {
+  if (isNaN(inicioMs) || inicioMs > refEndMs) return false;
+  if (churnMs === null || isNaN(churnMs)) return true;
+  return churnMs > refEndMs;
+}
+
+function contratoAtivoEm(d: ClienteRow, refEndMs: number) {
+  if (!d.inicioContrato) return false;
+  const inicio = new Date(d.inicioContrato).getTime();
+  const churnMs = d.dataChurn ? new Date(d.dataChurn).getTime() : null;
+  return estaAtivoNoPeriodo(inicio, churnMs, refEndMs);
+}
+
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const brlFull = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -173,7 +189,10 @@ function CarteiraDashboard() {
       if (isNaN(ini)) return false;
       if (ini > refBounds.end) return false;
       if (!d.fimContrato) return true;
-      const fim = new Date(d.fimContrato).getTime();
+      // const fim = new Date(d.fimContrato).getTime();
+      const fim = d.dataChurn
+        ? new Date(d.dataChurn).getTime()
+        : Number.POSITIVE_INFINITY;
       if (isNaN(fim)) return true;
       return fim >= refBounds.start;
     },
@@ -203,42 +222,72 @@ function CarteiraDashboard() {
     inCarteira,
   ]);
 
+  const filteredHistory = useMemo(() => {
+    const match = (arr: string[], v: string) =>
+      arr.length === 0 || arr.includes(v);
+
+    return data.filter(
+      d =>
+        match(profitFilter, d.profit) &&
+        match(franquiaFilter, d.franquia) &&
+        match(statusFilter, d.status) &&
+        match(planoFilter, d.plano) &&
+        match(tipoFilter, d.tipoContrato) &&
+        match(faixaFilter, d.faixaVencimento)
+    );
+  }, [
+    data,
+    profitFilter,
+    franquiaFilter,
+    statusFilter,
+    planoFilter,
+    tipoFilter,
+    faixaFilter,
+  ]);
+
   // KPIs
   const totalClientes = filtered.length;
-  const ativos = filtered.filter((d) => d.ativo).length;
-  const ativosTCV = filtered.filter(
-    (d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL",
-  ).length;
-  const ativosMRR = filtered.filter(
-    (d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL",
-  ).length;
+
+  // Sem mês selecionado: usa o status "ao vivo" do banco (d.ativo), que é a
+  // fonte da verdade pro estado atual. Com mês selecionado: recalcula
+  // ponto-no-tempo (início/fim de contrato) com a MESMA regra do gráfico de
+  // evolução, para o card bater com o último ponto do gráfico.
+  const refEndMs = refBounds ? refBounds.end : null;
+  const baseAtivos = useMemo(() => {
+    if (refEndMs === null) return filtered.filter((d) => d.ativo);
+    return filteredHistory.filter((d) => contratoAtivoEm(d, refEndMs));
+  }, [filtered, filteredHistory, refEndMs]);
+
+  const ativos = baseAtivos.length;
+  const ativosTCV = baseAtivos.filter((d) => d.tipoContrato.toUpperCase() != "MENSAL").length;
+  const ativosMRR = baseAtivos.filter((d) => d.tipoContrato.toUpperCase() == "MENSAL").length;
   const totalMRR = filtered.filter((d) => d.tipoContrato.toUpperCase() == "MENSAL").length;
   const totalTCV = filtered.filter((d) => d.tipoContrato.toUpperCase() != "MENSAL").length;
-  const churn = refBounds
-    ? data.filter(
-        (d) =>
-          d.churn &&
-          d.dataChurn &&
-          (() => {
-            const t = new Date(d.dataChurn).getTime();
-            return t >= refBounds!.start && t <= refBounds!.end;
-          })(),
-      ).length
-    : data.filter((d) => d.churn).length;
 
-  const pausados = filtered.filter((d) => d.pausado).length;
+  const churn = refBounds
+    ? filteredHistory.filter(
+      (d) =>
+        d.churn &&
+        d.dataChurn &&
+        (() => {
+          const t = new Date(d.dataChurn).getTime();
+          return t >= refBounds!.start && t <= refBounds!.end;
+        })(),
+    ).length
+    : filteredHistory.filter((d) => d.churn).length;
+
+  const pausados = filtered.filter((d) => d.pausado).length; // ver nota abaixo
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
-  const mrr = filtered
-    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL")
+
+  const mrr = baseAtivos
+    .filter((d) => d.tipoContrato.toUpperCase() == "MENSAL")
     .reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const mrrTCV = filtered
-    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL")
-    .reduce((s, d) => s + (d.valorMensal ?? 0), 0);
-  const contratoTCV = filtered
-    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL")
+
+  const valorContratoTCV = baseAtivos
+    .filter((d) => d.tipoContrato.toUpperCase() != "MENSAL")
     .reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
-  const ticketMedioTCV = ativosTCV > 0 ? contratoTCV / ativosTCV : 0;
+  const ticketMedioTCV = ativosTCV > 0 ? valorContratoTCV / ativosTCV : 0;
 
   const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
@@ -257,32 +306,36 @@ function CarteiraDashboard() {
     [ativos, churn, pausados],
   );
 
+  // Set por referência de objeto — baseAtivos vem do mesmo array `data`,
+  // então dá pra checar pertencimento sem precisar de um id único.
+  const ativosSet = useMemo(() => new Set(baseAtivos), [baseAtivos]);
+
   const topFranquias = useMemo(() => {
     const map = new Map<string, { clientes: number; mrr: number }>();
     filtered.forEach((d) => {
       const cur = map.get(d.franquia) ?? { clientes: 0, mrr: 0 };
       cur.clientes += 1;
-      if (d.ativo) cur.mrr += d.valorMensal ?? 0;
+      if (ativosSet.has(d)) cur.mrr += d.valorMensal ?? 0; // ✅
       map.set(d.franquia, cur);
     });
     return Array.from(map.entries())
       .map(([franquia, v]) => ({ franquia, ...v }))
       .sort((a, b) => b.mrr - a.mrr)
       .slice(0, 10);
-  }, [filtered]);
+  }, [filtered, ativosSet]);
 
   const porPlano = useMemo(() => {
     const map = new Map<string, { clientes: number; mrr: number }>();
     filtered.forEach((d) => {
       const cur = map.get(d.plano) ?? { clientes: 0, mrr: 0 };
       cur.clientes += 1;
-      if (d.ativo) cur.mrr += d.valorMensal ?? 0;
+      if (ativosSet.has(d)) cur.mrr += d.valorMensal ?? 0; // ✅
       map.set(d.plano, cur);
     });
     return Array.from(map.entries())
       .map(([plano, v]) => ({ plano, ...v }))
       .sort((a, b) => b.clientes - a.clientes);
-  }, [filtered]);
+  }, [filtered, ativosSet]);
 
   const porTipo = useMemo(() => {
     const map = new Map<string, number>();
@@ -296,21 +349,17 @@ function CarteiraDashboard() {
 
   const porFaixa = useMemo(() => {
     const order = [
-      "Vencido",
-      "Até 30 dias",
-      "31 a 60 dias",
-      "61 a 90 dias",
-      "Mais de 90 dias",
-      "Recorrente",
+      "Vencido", "Até 30 dias", "31 a 60 dias",
+      "61 a 90 dias", "Mais de 90 dias", "Recorrente",
     ];
     const map = new Map<string, number>();
     filtered
-      .filter((d) => d.ativo)
+      .filter((d) => ativosSet.has(d)) // ✅
       .forEach((d) => {
         map.set(d.faixaVencimento, (map.get(d.faixaVencimento) ?? 0) + 1);
       });
     return order.filter((k) => map.has(k)).map((name) => ({ name, value: map.get(name) ?? 0 }));
-  }, [filtered]);
+  }, [filtered, ativosSet])
 
   // Séries temporais mensais
   const timeSeries = useMemo(() => {
@@ -322,29 +371,16 @@ function CarteiraDashboard() {
       recebidos: number;
       perdidos: number;
     };
-    const monthKey = (d: Date) =>
-      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-    const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
-    const meses = [
-      "Jan",
-      "Fev",
-      "Mar",
-      "Abr",
-      "Mai",
-      "Jun",
-      "Jul",
-      "Ago",
-      "Set",
-      "Out",
-      "Nov",
-      "Dez",
-    ];
 
-    const withStart = filtered
+    const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+    const withStart = filteredHistory
       .map((d) => ({
         start: d.inicioContrato ? new Date(d.inicioContrato) : null,
-        end: d.fimContrato ? new Date(d.fimContrato) : null,
+        end: d.dataChurn ? new Date(d.dataChurn) : null,
         churn: d.churn,
+        isMensal: d.tipoContrato.toUpperCase() === "MENSAL",
         mrr: d.valorMensal ?? 0,
       }))
       .filter((d) => d.start && !isNaN(d.start.getTime()));
@@ -354,44 +390,58 @@ function CarteiraDashboard() {
     const minStart = new Date(Math.min(...withStart.map((d) => (d.start as Date).getTime())));
     const maxEnd = withStart.reduce((max, d) => {
       const t = d.end && !isNaN(d.end.getTime()) ? d.end.getTime() : 0;
-      return t > max ? t : max;
+      return Math.max(max, t);
     }, 0);
-    const now = new Date();
-    const endBound = new Date(Math.max(now.getTime(), maxEnd));
+
+    // Sem mês de referência: evolução até hoje. Com mês de referência: a
+    // série termina exatamente nesse mês, para o último ponto bater com os
+    // cards de KPI.
+    const endBound = refBounds ? new Date(refBounds.end) : new Date(Math.max(Date.now(), maxEnd));
+    if (minStart.getTime() > endBound.getTime()) return [] as Point[];
 
     const points: Point[] = [];
     let y = minStart.getUTCFullYear();
     let m = minStart.getUTCMonth();
-    while (
-      y < endBound.getUTCFullYear() ||
-      (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())
-    ) {
-      const eom = monthEnd(y, m);
+
+    while (y < endBound.getUTCFullYear() || (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())) {
       const som = new Date(Date.UTC(y, m, 1));
+      const eom = monthEnd(y, m);
+
       let clientesTotal = 0;
       let mrrTotal = 0;
       let recebidos = 0;
       let perdidos = 0;
+
       withStart.forEach((d) => {
-        const s = d.start as Date;
-        const e = d.end;
-        const startedBy = s.getTime() <= eom.getTime();
-        const notEnded = !e || isNaN(e.getTime()) || e.getTime() > eom.getTime();
-        if (startedBy && notEnded) {
-          clientesTotal += 1;
-          mrrTotal += d.mrr;
+        const inicio = d.start as Date;
+        const churnDate = d.end;
+
+        const ativoNoFimDoMes = estaAtivoNoPeriodo(
+          inicio.getTime(),
+          churnDate && !isNaN(churnDate.getTime()) ? churnDate.getTime() : null,
+          eom.getTime(),
+        );
+
+        if (ativoNoFimDoMes) {
+          clientesTotal++;
+          if (d.isMensal) mrrTotal += d.mrr; // só MENSAL, pra bater com o card "MRR"
         }
-        if (s.getTime() >= som.getTime() && s.getTime() <= eom.getTime()) recebidos += 1;
+
+        if (inicio.getTime() >= som.getTime() && inicio.getTime() <= eom.getTime()) {
+          recebidos++;
+        }
+
         if (
           d.churn &&
-          e &&
-          !isNaN(e.getTime()) &&
-          e.getTime() >= som.getTime() &&
-          e.getTime() <= eom.getTime()
+          churnDate &&
+          !isNaN(churnDate.getTime()) &&
+          churnDate.getTime() >= som.getTime() &&
+          churnDate.getTime() <= eom.getTime()
         ) {
-          perdidos += 1;
+          perdidos++;
         }
       });
+
       points.push({
         key: `${y}-${String(m + 1).padStart(2, "0")}`,
         label: `${meses[m]}/${String(y).slice(2)}`,
@@ -400,15 +450,13 @@ function CarteiraDashboard() {
         recebidos,
         perdidos,
       });
-      m += 1;
-      if (m > 11) {
-        m = 0;
-        y += 1;
-      }
+
+      m++;
+      if (m > 11) { m = 0; y++; }
     }
-    // Limita a últimos 24 meses para legibilidade
+
     return points.slice(-24);
-  }, [filtered]);
+  }, [filteredHistory, refBounds]);
 
   const contratosEmRisco = useMemo(
     () =>
@@ -471,8 +519,17 @@ function CarteiraDashboard() {
     setSortKey(null);
   };
 
-  const diffMonths = (start: Date, end: Date) =>
-    (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  const diffMonths = (start: Date, end: Date) => {
+    let months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+
+    if (end.getDate() < start.getDate()) {
+      months--;
+    }
+
+    return Math.max(months, 0);
+  };
 
   // Respeita o mês de referência selecionado (refEnd) e só conta lifetime de
   // clientes ainda ativos (pausados/outros status ficam de fora) — sem isso,
@@ -480,22 +537,21 @@ function CarteiraDashboard() {
   const lifetimeMedio = useMemo(() => {
     const refEnd = refBounds ? new Date(refBounds.end) : new Date();
     const valores: number[] = [];
-    filtered.forEach((d) => {
+    filteredHistory.forEach((d) => {
       if (!d.inicioContrato) return;
       const inicio = new Date(d.inicioContrato);
       if (isNaN(inicio.getTime())) return;
-      if (d.churn) {
-        if (!d.fimContrato) return; // sem data de saída => ignora
-        const fim = new Date(d.fimContrato);
-        if (isNaN(fim.getTime())) return;
-        valores.push(diffMonths(inicio, fim));
-      } else if (d.ativo) {
+      if (inicio.getTime() > refEnd.getTime()) return;
+      const churnMs = d.dataChurn ? new Date(d.dataChurn).getTime() : null;
+      if (churnMs !== null && !isNaN(churnMs) && churnMs <= refEnd.getTime()) {
+        valores.push(diffMonths(inicio, new Date(churnMs)));
+      } else {
         valores.push(diffMonths(inicio, refEnd));
       }
     });
     if (!valores.length) return 0;
     return valores.reduce((a, b) => a + b, 0) / valores.length;
-  }, [filtered, refBounds]);
+  }, [filteredHistory, refBounds]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -601,7 +657,7 @@ function CarteiraDashboard() {
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
             label="Valor Contratado (TCV)"
-            value={brl(contratoTCV)}
+            value={brl(valorContratoTCV)}
             accent="oklch(0.6 0.2 250)"
             detail={`${ativosTCV} contratos TCV`}
             tooltip="Valor total contratado dos clientes ativos com contratos TCV."
