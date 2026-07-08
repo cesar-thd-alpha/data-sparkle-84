@@ -7,13 +7,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist/**",
-      ".output/**",
-      ".vinxi/**",
-      ".vercel/**",
-      "node_modules/**",
-    ],
+    ignores: ["dist/**", ".output/**", ".vinxi/**", ".vercel/**", "node_modules/**"],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -40,10 +34,7 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
