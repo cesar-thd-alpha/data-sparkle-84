@@ -8,6 +8,6 @@ export default defineConfig({
     base: "/",
   },
   nitro: {
-    preset: "vercel",
+    preset: "node-server",
   },
 });
