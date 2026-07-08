@@ -17,6 +17,7 @@ export type ClienteRow = {
   alerta: string;
   ativo: boolean;
   churn: boolean;
+  dataChurn: string | null;
   pausado: boolean;
   faixaVencimento: string;
 };
@@ -34,7 +35,7 @@ export const getClientes = createServerFn({ method: "GET" }).handler(
           `SELECT "Cliente","Franquia","Profit","Status","Plano","Tipo Contrato",
                   "Valor Contrato","Valor Mensal","Início Contrato","Fim Contrato",
                   "Renovação Auto","Vencimento","Alerta","Cliente Ativo","Cliente Churn",
-                  "Cliente Pausado","Faixa Vencimento"
+                  "Cliente Pausado","Data de saída (caso de churn)","Faixa Vencimento"
            FROM clientes_franqueados_profits`,
         );
       } finally {
@@ -50,10 +51,8 @@ export const getClientes = createServerFn({ method: "GET" }).handler(
       result = await run(false);
     }
 
-    const toNum = (v: unknown) =>
-      v === null || v === undefined || v === "" ? null : Number(v);
-    const toStr = (v: unknown) =>
-      v === null || v === undefined ? "" : String(v).trim();
+    const toNum = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
+    const toStr = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
     const toDate = (v: unknown) => {
       if (!v) return null;
       const d = v instanceof Date ? v : new Date(String(v));
@@ -76,6 +75,7 @@ export const getClientes = createServerFn({ method: "GET" }).handler(
       alerta: toStr(r.Alerta) || "—",
       ativo: !!r["Cliente Ativo"],
       churn: !!r["Cliente Churn"],
+      dataChurn: toDate(r["Data de saída (caso de churn)"]),
       pausado: !!r["Cliente Pausado"],
       faixaVencimento: toStr(r["Faixa Vencimento"]) || "—",
     }));

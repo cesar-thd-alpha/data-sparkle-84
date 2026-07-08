@@ -3,10 +3,35 @@ import * as React from "react";
 import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, ComposedChart,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LabelList,
+  LineChart,
+  Line,
+  ComposedChart,
 } from "recharts";
-import { AlertTriangle, ArrowUpDown, TrendingUp, Users, Building2, DollarSign, Check, ChevronDown, Info, Download, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  TrendingUp,
+  Users,
+  Building2,
+  DollarSign,
+  Check,
+  ChevronDown,
+  Info,
+  Download,
+  Search,
+} from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +41,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
   Tooltip as Tooltip2,
@@ -34,7 +64,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Carteira Geral — Dashboard Executivo" },
-      { name: "description", content: "Visão executiva da carteira de clientes: MRR, distribuição, contratos e riscos." },
+      {
+        name: "description",
+        content: "Visão executiva da carteira de clientes: MRR, distribuição, contratos e riscos.",
+      },
       { property: "og:title", content: "Carteira Geral — Dashboard Executivo" },
       { property: "og:description", content: "Visão executiva da carteira de clientes." },
     ],
@@ -69,18 +102,28 @@ const FAIXA_COLORS: Record<string, string> = {
 };
 
 const FALLBACK = [
-  "oklch(0.6 0.2 250)", "oklch(0.65 0.18 180)", "oklch(0.7 0.18 145)",
-  "oklch(0.78 0.15 80)", "oklch(0.65 0.22 25)", "oklch(0.6 0.22 310)",
+  "oklch(0.6 0.2 250)",
+  "oklch(0.65 0.18 180)",
+  "oklch(0.7 0.18 145)",
+  "oklch(0.78 0.15 80)",
+  "oklch(0.65 0.22 25)",
+  "oklch(0.6 0.22 310)",
 ];
 
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const brlFull = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brlFull = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 type SortKey =
-  | "cliente" | "franquia" | "profit" | "status" | "plano"
-  | "tipoContrato" | "valorMensal" | "vencimentoDias" | "faixaVencimento";
+  | "cliente"
+  | "franquia"
+  | "profit"
+  | "status"
+  | "plano"
+  | "tipoContrato"
+  | "valorMensal"
+  | "vencimentoDias"
+  | "faixaVencimento";
 
 function CarteiraDashboard() {
   const { data } = useSuspenseQuery(clientesQuery);
@@ -118,7 +161,10 @@ function CarteiraDashboard() {
     return { start, end };
   }, [mesRef]);
 
-  // Snapshot da carteira no mês selecionado (independente do tipo de contrato).
+  // Snapshot da carteira no mês selecionado: contrato já começou e (ainda não
+  // terminou, ou termina depois do início do período). Precisa checar
+  // fimContrato — sem isso, um cliente que já deu churn há meses continuaria
+  // contando como "na carteira" em qualquer mês de referência posterior.
   const inCarteira = React.useCallback(
     (d: ClienteRow) => {
       if (!refBounds) return true;
@@ -130,20 +176,6 @@ function CarteiraDashboard() {
       const fim = new Date(d.fimContrato).getTime();
       if (isNaN(fim)) return true;
       return fim >= refBounds.start;
-    },
-    [refBounds],
-  );
-
-  // Fluxo comercial: vendas TCV realizadas no mês selecionado.
-  const tcvNoMes = React.useCallback(
-    (d: ClienteRow) => {
-      if (d.tipoContrato.toUpperCase() === "MENSAL") return false;
-      if (!d.ativo) return false;
-      if (!refBounds) return true;
-      if (!d.inicioContrato) return false;
-      const t = new Date(d.inicioContrato).getTime();
-      if (isNaN(t)) return false;
-      return t >= refBounds.start && t <= refBounds.end;
     },
     [refBounds],
   );
@@ -160,64 +192,59 @@ function CarteiraDashboard() {
         match(faixaFilter, d.faixaVencimento) &&
         inCarteira(d),
     );
-  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, inCarteira]);
-
-  // Base específica TCV (não afetada pelos demais filtros de carteira, mantém filtros comuns).
-  const tcvFiltered = useMemo(() => {
-    const match = (arr: string[], v: string) => arr.length === 0 || arr.includes(v);
-    return data.filter(
-      (d) =>
-        match(profitFilter, d.profit) &&
-        match(franquiaFilter, d.franquia) &&
-        match(statusFilter, d.status) &&
-        match(planoFilter, d.plano) &&
-        match(tipoFilter, d.tipoContrato) &&
-        match(faixaFilter, d.faixaVencimento) &&
-        tcvNoMes(d),
-    );
-  }, [data, profitFilter, franquiaFilter, statusFilter, planoFilter, tipoFilter, faixaFilter, tcvNoMes]);
+  }, [
+    data,
+    profitFilter,
+    franquiaFilter,
+    statusFilter,
+    planoFilter,
+    tipoFilter,
+    faixaFilter,
+    inCarteira,
+  ]);
 
   // KPIs
   const totalClientes = filtered.length;
   const ativos = filtered.filter((d) => d.ativo).length;
-  const ativosMRR = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").length;
-  const churn = filtered.filter((d) => d.churn).length;
+  const ativosTCV = filtered.filter(
+    (d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL",
+  ).length;
+  const ativosMRR = filtered.filter(
+    (d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL",
+  ).length;
+  const totalMRR = filtered.filter((d) => d.tipoContrato.toUpperCase() == "MENSAL").length;
+  const totalTCV = filtered.filter((d) => d.tipoContrato.toUpperCase() != "MENSAL").length;
+  const churn = refBounds
+    ? data.filter(
+        (d) =>
+          d.churn &&
+          d.dataChurn &&
+          (() => {
+            const t = new Date(d.dataChurn).getTime();
+            return t >= refBounds!.start && t <= refBounds!.end;
+          })(),
+      ).length
+    : data.filter((d) => d.churn).length;
+
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
-  const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const mrr = filtered
+    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL")
+    .reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const mrrTCV = filtered
+    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL")
+    .reduce((s, d) => s + (d.valorMensal ?? 0), 0);
+  const contratoTCV = filtered
+    .filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL")
+    .reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedio = ativosMRR > 0 ? mrr / ativosMRR : 0;
-
-  // TCV — fluxo comercial (vendas do mês)
-  const ativosTCV = tcvFiltered.length;
-  const contratoTCV = tcvFiltered.reduce((s, d) => s + (d.valorContrato ?? 0), 0);
   const ticketMedioTCV = ativosTCV > 0 ? contratoTCV / ativosTCV : 0;
 
-  // Taxa de Churn
-  const churnRate = useMemo(() => {
-    if (refBounds) {
-      const churnsNoMes = filtered.filter((d) => {
-        if (!d.churn || !d.fimContrato) return false;
-        const t = new Date(d.fimContrato).getTime();
-        return !isNaN(t) && t >= refBounds.start && t <= refBounds.end;
-      }).length;
-      const baseInicio = filtered.filter((d) => {
-        if (!d.inicioContrato) return false;
-        const ini = new Date(d.inicioContrato).getTime();
-        if (isNaN(ini) || ini >= refBounds.start) return false;
-        if (!d.fimContrato) return true;
-        const fim = new Date(d.fimContrato).getTime();
-        return isNaN(fim) || fim >= refBounds.start;
-      }).length;
-      return baseInicio > 0 ? (churnsNoMes / baseInicio) * 100 : 0;
-    }
-    return totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
-  }, [filtered, refBounds, churn, totalClientes]);
+  const churnRate = totalClientes > 0 ? (churn / totalClientes) * 100 : 0;
   const vencendo30 = filtered.filter(
     (d) => d.ativo && d.vencimentoDias !== null && d.vencimentoDias >= 0 && d.vencimentoDias <= 30,
   ).length;
-  const vencidos = filtered.filter(
-    (d) => d.ativo && d.faixaVencimento === "Vencido",
-  ).length;
+  const vencidos = filtered.filter((d) => d.ativo && d.faixaVencimento === "Vencido").length;
 
   // Chart data
   const porStatus = useMemo(
@@ -268,14 +295,21 @@ function CarteiraDashboard() {
   }, [filtered]);
 
   const porFaixa = useMemo(() => {
-    const order = ["Vencido", "Até 30 dias", "31 a 60 dias", "61 a 90 dias", "Mais de 90 dias", "Recorrente"];
+    const order = [
+      "Vencido",
+      "Até 30 dias",
+      "31 a 60 dias",
+      "61 a 90 dias",
+      "Mais de 90 dias",
+      "Recorrente",
+    ];
     const map = new Map<string, number>();
-    filtered.filter((d) => d.ativo).forEach((d) => {
-      map.set(d.faixaVencimento, (map.get(d.faixaVencimento) ?? 0) + 1);
-    });
-    return order
-      .filter((k) => map.has(k))
-      .map((name) => ({ name, value: map.get(name) ?? 0 }));
+    filtered
+      .filter((d) => d.ativo)
+      .forEach((d) => {
+        map.set(d.faixaVencimento, (map.get(d.faixaVencimento) ?? 0) + 1);
+      });
+    return order.filter((k) => map.has(k)).map((name) => ({ name, value: map.get(name) ?? 0 }));
   }, [filtered]);
 
   // Séries temporais mensais
@@ -291,7 +325,20 @@ function CarteiraDashboard() {
     const monthKey = (d: Date) =>
       `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
     const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
-    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const meses = [
+      "Jan",
+      "Fev",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dez",
+    ];
 
     const withStart = filtered
       .map((d) => ({
@@ -304,9 +351,7 @@ function CarteiraDashboard() {
 
     if (withStart.length === 0) return [] as Point[];
 
-    const minStart = new Date(
-      Math.min(...withStart.map((d) => (d.start as Date).getTime())),
-    );
+    const minStart = new Date(Math.min(...withStart.map((d) => (d.start as Date).getTime())));
     const maxEnd = withStart.reduce((max, d) => {
       const t = d.end && !isNaN(d.end.getTime()) ? d.end.getTime() : 0;
       return t > max ? t : max;
@@ -317,7 +362,10 @@ function CarteiraDashboard() {
     const points: Point[] = [];
     let y = minStart.getUTCFullYear();
     let m = minStart.getUTCMonth();
-    while (y < endBound.getUTCFullYear() || (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())) {
+    while (
+      y < endBound.getUTCFullYear() ||
+      (y === endBound.getUTCFullYear() && m <= endBound.getUTCMonth())
+    ) {
       const eom = monthEnd(y, m);
       const som = new Date(Date.UTC(y, m, 1));
       let clientesTotal = 0;
@@ -353,7 +401,10 @@ function CarteiraDashboard() {
         perdidos,
       });
       m += 1;
-      if (m > 11) { m = 0; y += 1; }
+      if (m > 11) {
+        m = 0;
+        y += 1;
+      }
     }
     // Limita a últimos 24 meses para legibilidade
     return points.slice(-24);
@@ -421,9 +472,11 @@ function CarteiraDashboard() {
   };
 
   const diffMonths = (start: Date, end: Date) =>
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth());
+    (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
 
+  // Respeita o mês de referência selecionado (refEnd) e só conta lifetime de
+  // clientes ainda ativos (pausados/outros status ficam de fora) — sem isso,
+  // trocar o filtro de mês não muda o resultado e status não-ativos inflam a média.
   const lifetimeMedio = useMemo(() => {
     const refEnd = refBounds ? new Date(refBounds.end) : new Date();
     const valores: number[] = [];
@@ -449,16 +502,34 @@ function CarteiraDashboard() {
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Carteira — Dashboard Executivo</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Carteira — Dashboard Executivo
+            </h1>
             <p className="text-sm text-muted-foreground">
               Visão consolidada de MRR, contratos, planos e riscos da carteira.
             </p>
           </div>
           <nav className="flex gap-2">
-            <Link to="/"><Button variant="secondary" size="sm">Carteira Geral</Button></Link>
-            <Link to="/carteira-profits"><Button variant="ghost" size="sm">Carteira por Profits</Button></Link>
-            <Link to="/profits"><Button variant="ghost" size="sm">Indicadores Profits</Button></Link>
-            <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
+            <Link to="/">
+              <Button variant="secondary" size="sm">
+                Carteira Geral
+              </Button>
+            </Link>
+            <Link to="/carteira-profits">
+              <Button variant="ghost" size="sm">
+                Carteira por Profits
+              </Button>
+            </Link>
+            <Link to="/profits">
+              <Button variant="ghost" size="sm">
+                Indicadores Profits
+              </Button>
+            </Link>
+            <Link to="/performance">
+              <Button variant="ghost" size="sm">
+                Performance
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -467,14 +538,41 @@ function CarteiraDashboard() {
         {/* Filters */}
         <Card>
           <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-            <FilterSelect label="Profit" value={profitFilter} onChange={setProfitFilter} options={opts.profit} />
-            <FilterSelect label="Franquia" value={franquiaFilter} onChange={setFranquiaFilter} options={opts.franquia} />
-            <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={opts.status} />
+            <FilterSelect
+              label="Profit"
+              value={profitFilter}
+              onChange={setProfitFilter}
+              options={opts.profit}
+            />
+            <FilterSelect
+              label="Franquia"
+              value={franquiaFilter}
+              onChange={setFranquiaFilter}
+              options={opts.franquia}
+            />
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={opts.status}
+            />
             {/* <FilterSelect label="Plano" value={planoFilter} onChange={setPlanoFilter} options={opts.plano} /> */}
-            <FilterSelect label="Tipo Contrato" value={tipoFilter} onChange={setTipoFilter} options={opts.tipo} />
-            <FilterSelect label="Vencimento" value={faixaFilter} onChange={setFaixaFilter} options={opts.faixa} />
+            <FilterSelect
+              label="Tipo Contrato"
+              value={tipoFilter}
+              onChange={setTipoFilter}
+              options={opts.tipo}
+            />
+            <FilterSelect
+              label="Vencimento"
+              value={faixaFilter}
+              onChange={setFaixaFilter}
+              options={opts.faixa}
+            />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Mês/Ano de Referência</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Mês/Ano de Referência
+              </label>
               <Input
                 type="month"
                 value={mesRef}
@@ -489,53 +587,104 @@ function CarteiraDashboard() {
         </Card>
 
         {/* KPIs — Row 1: financeiro */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+        {/* Receita */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
-            label="MRR (Receita Recorrente)"
+            label="MRR"
             value={brl(mrr)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do MRR de Todos os Clientes Ativos com Contrato Mensal"
+            detail={`${ativosMRR} clientes mensais`}
+            tooltip="Receita recorrente mensal dos clientes ativos."
           />
+
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
-            label="Valor Contratado TCV"
+            label="Valor Contratado (TCV)"
             value={brl(contratoTCV)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do Valor Contratado de Todos os Clientes TCV Ativos"
+            detail={`${ativosTCV} contratos TCV`}
+            tooltip="Valor total contratado dos clientes ativos com contratos TCV."
           />
+
           <Kpi
-            label="Lifetime Médio"
-            value={`${lifetimeMedio.toFixed(1)} meses`}
-            accent="oklch(0.65 0.18 180)"
-          />
-          <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
             label="Ticket Médio MRR"
             value={brl(ticketMedio)}
             accent="oklch(0.7 0.18 145)"
-            tooltip="Soma do MRR dos Clientes (mensais) Ativos divido por Qtd de Clientes (mensais) Ativos"
+            detail="Clientes mensais"
+            tooltip="MRR dividido pela quantidade de clientes mensais ativos."
           />
+
           <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
             label="Ticket Médio TCV"
             value={brl(ticketMedioTCV)}
             accent="oklch(0.7 0.18 145)"
-            tooltip="Soma do MRR dos Clientes (NÃO mensais) Ativos divido por Qtd de Clientes (NÃO mensais) Ativos"
-          />
-          <Kpi
-            label="Churn Rate"
-            value={`${churnRate.toFixed(1)}%`}
-            accent={churnRate > 5 ? "oklch(0.6 0.22 25)" : "oklch(0.7 0.18 145)"}
-            tooltip="Qtd Clientes Churn dividido por Total de Clientes (Ativos, Pausados e Churn)"
+            detail="Contratos TCV"
+            tooltip="Valor contratado dividido pela quantidade de contratos TCV ativos."
           />
         </div>
 
-        {/* KPIs — Row 2: carteira */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
-          <Kpi icon={<Users className="h-4 w-4" />} label="Total de Clientes" value={totalClientes} />
-          <Kpi label="Ativos" value={<span className="inline-flex items-center gap-2">🟢 {ativos}</span>} accent="oklch(0.7 0.18 145)" />
-          <Kpi label="Churn" value={<span className="inline-flex items-center gap-2">🔴 {churn}</span>} accent="oklch(0.6 0.22 25)" />
-          <Kpi label="Pausados" value={<span className="inline-flex items-center gap-2">🟡 {pausados}</span>} accent="oklch(0.78 0.15 80)" />
-          <Kpi icon={<Building2 className="h-4 w-4" />} label="Franquias" value={franquias} />
+        {/* Carteira */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 mt-4">
+          <Kpi
+            icon={<Users className="h-4 w-4" />}
+            label="Total de Clientes"
+            value={totalClientes}
+            detail={`${totalMRR} Mensais • ${totalTCV} TCV`}
+          />
+
+          <Kpi
+            icon={<Check className="h-4 w-4" />}
+            label="Ativos"
+            value={ativos}
+            accent="oklch(0.7 0.18 145)"
+            detail={`${ativosMRR} Mensais • ${ativosTCV} TCV`}
+          />
+
+          <Kpi
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Churn"
+            value={churn}
+            accent="oklch(0.6 0.22 25)"
+            detail={`${churnRate.toFixed(1)}% da carteira`}
+          />
+
+          <Kpi
+            icon={<ArrowUpDown className="h-4 w-4" />}
+            label="Pausados"
+            value={pausados}
+            accent="oklch(0.78 0.15 80)"
+            detail={`${((pausados / Math.max(totalClientes, 1)) * 100).toFixed(1)}% da carteira`}
+          />
+
+          <Kpi
+            icon={<Building2 className="h-4 w-4" />}
+            label="Franquias"
+            value={franquias}
+            detail={`${(totalClientes / Math.max(franquias, 1)).toFixed(1)} clientes/franquia`}
+          />
+        </div>
+
+        {/* Saúde da carteira */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-2 mt-4">
+          <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Lifetime Médio"
+            value={`${lifetimeMedio.toFixed(1)} meses`}
+            accent="oklch(0.65 0.18 180)"
+            detail="Tempo médio de permanência"
+          />
+
+          <Kpi
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Churn Rate"
+            value={`${churnRate.toFixed(1)}%`}
+            accent={churnRate > 5 ? "oklch(0.6 0.22 25)" : "oklch(0.7 0.18 145)"}
+            detail="Clientes perdidos no período"
+            tooltip="Quantidade de clientes em churn dividida pelo total de clientes."
+          />
         </div>
 
         {/* Alertas */}
@@ -557,7 +706,9 @@ function CarteiraDashboard() {
         {/* Charts row 1 */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Status da Carteira</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Status da Carteira</CardTitle>
+            </CardHeader>
             <CardContent className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -574,7 +725,9 @@ function CarteiraDashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Top 10 Franquias por MRR</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Top 10 Franquias por MRR</CardTitle>
+            </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topFranquias} layout="vertical" margin={{ left: 12, right: 72 }}>
@@ -583,7 +736,12 @@ function CarteiraDashboard() {
                   <YAxis type="category" dataKey="franquia" width={160} fontSize={11} />
                   <Tooltip formatter={(v: number) => brlFull(v)} />
                   <Bar dataKey="mrr" fill="oklch(0.65 0.18 180)" radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="mrr" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
+                    <LabelList
+                      dataKey="mrr"
+                      position="right"
+                      fontSize={11}
+                      formatter={(v: number) => brl(v)}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -594,7 +752,9 @@ function CarteiraDashboard() {
         {/* Charts row 2 */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Distribuição por Plano</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Distribuição por Plano</CardTitle>
+            </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porPlano}>
@@ -602,7 +762,9 @@ function CarteiraDashboard() {
                   <XAxis dataKey="plano" fontSize={11} />
                   <YAxis fontSize={11} allowDecimals={false} />
                   <Tooltip
-                    formatter={(v: number, n) => (n === "mrr" ? brlFull(v) : v.toLocaleString("pt-BR"))}
+                    formatter={(v: number, n) =>
+                      n === "mrr" ? brlFull(v) : v.toLocaleString("pt-BR")
+                    }
                   />
                   <Legend />
                   <Bar dataKey="clientes" name="Clientes" radius={[4, 4, 0, 0]}>
@@ -617,7 +779,9 @@ function CarteiraDashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Contratos por Tipo</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Contratos por Tipo</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porTipo} layout="vertical" margin={{ left: 12, right: 48 }}>
@@ -662,7 +826,9 @@ function CarteiraDashboard() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Crescimento de Clientes por Mês</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Crescimento de Clientes por Mês</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
@@ -687,7 +853,9 @@ function CarteiraDashboard() {
         {/* Evolução mensal */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Crescimento de MRR por Mês</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Crescimento de MRR por Mês</CardTitle>
+            </CardHeader>
             <CardContent className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
@@ -710,7 +878,9 @@ function CarteiraDashboard() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Clientes Recebidos vs. Perdidos por Mês</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Clientes Recebidos vs. Perdidos por Mês</CardTitle>
+          </CardHeader>
           <CardContent className="h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={timeSeries} margin={{ left: 8, right: 16, top: 8 }}>
@@ -719,8 +889,18 @@ function CarteiraDashboard() {
                 <YAxis fontSize={11} allowDecimals={false} />
                 <Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
                 <Legend />
-                <Bar dataKey="recebidos" name="Recebidos" fill="oklch(0.7 0.18 145)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="perdidos" name="Perdidos" fill="oklch(0.6 0.22 25)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="recebidos"
+                  name="Recebidos"
+                  fill="oklch(0.7 0.18 145)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="perdidos"
+                  name="Perdidos"
+                  fill="oklch(0.6 0.22 25)"
+                  radius={[4, 4, 0, 0]}
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
@@ -757,8 +937,10 @@ function CarteiraDashboard() {
                     {contratosEmRisco.map((d, i) => {
                       const v = d.vencimentoDias ?? 0;
                       const tone =
-                        v < 0 ? "text-red-600 dark:text-red-400"
-                          : v <= 30 ? "text-amber-600 dark:text-amber-400"
+                        v < 0
+                          ? "text-red-600 dark:text-red-400"
+                          : v <= 30
+                            ? "text-amber-600 dark:text-amber-400"
                             : "text-foreground";
                       return (
                         <TableRow key={i}>
@@ -773,7 +955,13 @@ function CarteiraDashboard() {
                             {v < 0 ? `${Math.abs(v)}d vencido` : `${v}d`}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" style={{ backgroundColor: `${FAIXA_COLORS[d.faixaVencimento] ?? "hsl(var(--muted))"}25`, color: FAIXA_COLORS[d.faixaVencimento] ?? "inherit" }}>
+                            <Badge
+                              variant="secondary"
+                              style={{
+                                backgroundColor: `${FAIXA_COLORS[d.faixaVencimento] ?? "hsl(var(--muted))"}25`,
+                                color: FAIXA_COLORS[d.faixaVencimento] ?? "inherit",
+                              }}
+                            >
                               {d.faixaVencimento}
                             </Badge>
                           </TableCell>
@@ -821,10 +1009,23 @@ function DetalhamentoCard({
 
   const downloadCsv = () => {
     const headers = [
-      "Cliente", "Franquia", "Profit", "Status", "Plano", "Tipo Contrato",
-      "Valor Mensal", "Valor Contrato", "Início Contrato", "Fim Contrato",
-      "Renovação Auto", "Vencimento (dias)", "Faixa Vencimento", "Alerta",
-      "Ativo", "Churn", "Pausado",
+      "Cliente",
+      "Franquia",
+      "Profit",
+      "Status",
+      "Plano",
+      "Tipo Contrato",
+      "Valor Mensal",
+      "Valor Contrato",
+      "Início Contrato",
+      "Fim Contrato",
+      "Renovação Auto",
+      "Vencimento (dias)",
+      "Faixa Vencimento",
+      "Alerta",
+      "Ativo",
+      "Churn",
+      "Pausado",
     ];
     const esc = (v: unknown) => {
       const s = v === null || v === undefined ? "" : String(v);
@@ -832,16 +1033,31 @@ function DetalhamentoCard({
     };
     const lines = [headers.join(";")];
     for (const d of visible) {
-      lines.push([
-        d.cliente, d.franquia, d.profit, d.status, d.plano, d.tipoContrato,
-        d.valorMensal ?? "", d.valorContrato ?? "",
-        d.inicioContrato ? d.inicioContrato.slice(0, 10) : "",
-        d.fimContrato ? d.fimContrato.slice(0, 10) : "",
-        d.renovacaoAuto, d.vencimentoDias ?? "", d.faixaVencimento, d.alerta,
-        d.ativo ? "Sim" : "Não", d.churn ? "Sim" : "Não", d.pausado ? "Sim" : "Não",
-      ].map(esc).join(";"));
+      lines.push(
+        [
+          d.cliente,
+          d.franquia,
+          d.profit,
+          d.status,
+          d.plano,
+          d.tipoContrato,
+          d.valorMensal ?? "",
+          d.valorContrato ?? "",
+          d.inicioContrato ? d.inicioContrato.slice(0, 10) : "",
+          d.fimContrato ? d.fimContrato.slice(0, 10) : "",
+          d.renovacaoAuto,
+          d.vencimentoDias ?? "",
+          d.faixaVencimento,
+          d.alerta,
+          d.ativo ? "Sim" : "Não",
+          d.churn ? "Sim" : "Não",
+          d.pausado ? "Sim" : "Não",
+        ]
+          .map(esc)
+          .join(";"),
+      );
     }
-    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -881,15 +1097,71 @@ function DetalhamentoCard({
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableHead label="Cliente" k="cliente" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Franquia" k="franquia" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Profit" k="profit" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Plano" k="plano" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Tipo" k="tipoContrato" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortableHead label="Valor Mensal" k="valorMensal" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                <SortableHead label="Vence em" k="vencimentoDias" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
-                <SortableHead label="Faixa" k="faixaVencimento" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortableHead
+                  label="Cliente"
+                  k="cliente"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Franquia"
+                  k="franquia"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Profit"
+                  k="profit"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Status"
+                  k="status"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Plano"
+                  k="plano"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Tipo"
+                  k="tipoContrato"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
+                <SortableHead
+                  label="Valor Mensal"
+                  k="valorMensal"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                  align="right"
+                />
+                <SortableHead
+                  label="Vence em"
+                  k="vencimentoDias"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                  align="right"
+                />
+                <SortableHead
+                  label="Faixa"
+                  k="faixaVencimento"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={toggleSort}
+                />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -901,7 +1173,10 @@ function DetalhamentoCard({
                     <TableCell>{d.franquia}</TableCell>
                     <TableCell>{d.profit}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" style={{ backgroundColor: `${statusColor}25`, color: statusColor }}>
+                      <Badge
+                        variant="secondary"
+                        style={{ backgroundColor: `${statusColor}25`, color: statusColor }}
+                      >
                         {d.status}
                       </Badge>
                     </TableCell>
@@ -931,15 +1206,20 @@ function Kpi({
   accent,
   icon,
   tooltip,
+  detail,
 }: {
   label: string;
   value: React.ReactNode;
   accent?: string;
   icon?: React.ReactNode;
   tooltip?: string;
+  detail?: string;
 }) {
   return (
-    <Card>
+    <Card
+      className="hover:shadow-lg transition-all duration-200"
+      style={accent ? { borderLeft: `4px solid ${accent}` } : undefined}
+    >
       <CardContent className="pt-5">
         <div className="flex items-center justify-between">
           <div
@@ -951,6 +1231,7 @@ function Kpi({
 
           {icon && <div className="text-muted-foreground">{icon}</div>}
         </div>
+        <span className="font-semibold text-xs text-gray-500">{detail ?? "."}</span>
 
         <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
           <span className="flex items-center justify-between">
@@ -978,7 +1259,10 @@ function Kpi({
 }
 
 function AlertCard({
-  title, value, description, tone,
+  title,
+  value,
+  description,
+  tone,
 }: {
   title: string;
   value: number;
@@ -986,8 +1270,10 @@ function AlertCard({
   tone: "ok" | "warn" | "danger";
 }) {
   const color =
-    tone === "danger" ? "oklch(0.6 0.22 25)"
-      : tone === "warn" ? "oklch(0.78 0.15 80)"
+    tone === "danger"
+      ? "oklch(0.6 0.22 25)"
+      : tone === "warn"
+        ? "oklch(0.78 0.15 80)"
         : "oklch(0.7 0.18 145)";
   return (
     <Card>
@@ -997,7 +1283,9 @@ function AlertCard({
             <div className="text-sm font-medium">{title}</div>
             <div className="text-xs text-muted-foreground">{description}</div>
           </div>
-          <div className="text-3xl font-bold tabular-nums" style={{ color }}>{value}</div>
+          <div className="text-3xl font-bold tabular-nums" style={{ color }}>
+            {value}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1005,26 +1293,26 @@ function AlertCard({
 }
 
 function FilterSelect({
-  label, value, onChange, options,
-}: { label: string; value: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+}) {
   const toggle = (opt: string) =>
     onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
   const display =
-    value.length === 0
-      ? "Todos"
-      : value.length === 1
-        ? value[0]
-        : `${value.length} selecionados`;
+    value.length === 0 ? "Todos" : value.length === 1 ? value[0] : `${value.length} selecionados`;
   return (
     <div className="flex min-w-[180px] flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-full justify-between font-normal"
-          >
+          <Button variant="outline" size="sm" className="h-9 w-full justify-between font-normal">
             <span className="truncate">{display}</span>
             <ChevronDown className="h-4 w-4 opacity-60" />
           </Button>
@@ -1066,7 +1354,12 @@ function FilterSelect({
 }
 
 function SortableHead({
-  label, k, sortKey, sortDir, onClick, align,
+  label,
+  k,
+  sortKey,
+  sortDir,
+  onClick,
+  align,
 }: {
   label: string;
   k: SortKey;

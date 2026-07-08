@@ -3,8 +3,18 @@ import * as React from "react";
 import { useMemo, useState } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LabelList,
 } from "recharts";
 import { ChevronDown, Check, DollarSign, Users, Info } from "lucide-react";
 import { getClientes, type ClienteRow } from "@/lib/clientes.functions";
@@ -14,7 +24,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
   Tooltip as Tooltip2,
@@ -32,9 +47,16 @@ export const Route = createFileRoute("/carteira-profits")({
   head: () => ({
     meta: [
       { title: "Carteira por Profits" },
-      { name: "description", content: "Análise operacional da carteira de clientes por Profit: receita, ranking e participação." },
+      {
+        name: "description",
+        content:
+          "Análise operacional da carteira de clientes por Profit: receita, ranking e participação.",
+      },
       { property: "og:title", content: "Carteira por Profits" },
-      { property: "og:description", content: "Análise operacional dos Profits: receita, ranking e participação." },
+      {
+        property: "og:description",
+        content: "Análise operacional dos Profits: receita, ranking e participação.",
+      },
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(clientesQuery),
@@ -46,15 +68,20 @@ export const Route = createFileRoute("/carteira-profits")({
 });
 
 const PALETTE = [
-  "oklch(0.6 0.2 250)", "oklch(0.65 0.18 180)", "oklch(0.7 0.18 145)",
-  "oklch(0.78 0.15 80)", "oklch(0.65 0.22 25)", "oklch(0.6 0.22 310)",
-  "oklch(0.55 0.18 280)", "oklch(0.72 0.14 40)", "oklch(0.5 0.15 200)",
+  "oklch(0.6 0.2 250)",
+  "oklch(0.65 0.18 180)",
+  "oklch(0.7 0.18 145)",
+  "oklch(0.78 0.15 80)",
+  "oklch(0.65 0.22 25)",
+  "oklch(0.6 0.22 310)",
+  "oklch(0.55 0.18 280)",
+  "oklch(0.72 0.14 40)",
+  "oklch(0.5 0.15 200)",
 ];
 
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const brlFull = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brlFull = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function CarteiraProfitsPage() {
   const { data } = useSuspenseQuery(clientesQuery);
@@ -145,12 +172,10 @@ function CarteiraProfitsPage() {
         totalAtivos: v.totalAtivos,
         mrr: v.mrr,
         tcv: v.tcv,
-        ticketMedioMRR:
-          v.ativosMRR > 0 ? v.mrr / v.ativosMRR : 0,
-        ticketMedioTCV:
-          v.ativosTCV > 0 ? v.tcv / v.ativosTCV : 0,
+        ticketMedioMRR: v.ativosMRR > 0 ? v.mrr / v.ativosMRR : 0,
+        ticketMedioTCV: v.ativosTCV > 0 ? v.tcv / v.ativosTCV : 0,
       }))
-      .sort((a, b) => (b.mrr + b.tcv) - (a.mrr + a.tcv));
+      .sort((a, b) => b.mrr + b.tcv - (a.mrr + a.tcv));
   }, [filtered]);
 
   const totalProfits = porProfit.length;
@@ -163,10 +188,7 @@ function CarteiraProfitsPage() {
   const ticketMedioGeral = totalAtivosMRR > 0 ? totalMrr / totalAtivosMRR : 0;
 
   const participacao = useMemo(
-    () =>
-      porProfit
-        .filter((p) => p.mrr > 0)
-        .map((p) => ({ name: p.profit, value: p.mrr })),
+    () => porProfit.filter((p) => p.mrr > 0).map((p) => ({ name: p.profit, value: p.mrr })),
     [porProfit],
   );
 
@@ -191,10 +213,26 @@ function CarteiraProfitsPage() {
             </p>
           </div>
           <nav className="flex gap-2">
-            <Link to="/"><Button variant="ghost" size="sm">Carteira Geral</Button></Link>
-            <Link to="/carteira-profits"><Button variant="secondary" size="sm">Carteira por Profits</Button></Link>
-            <Link to="/profits"><Button variant="ghost" size="sm">Indicadores Profits</Button></Link>
-            <Link to="/performance"><Button variant="ghost" size="sm">Performance</Button></Link>
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                Carteira Geral
+              </Button>
+            </Link>
+            <Link to="/carteira-profits">
+              <Button variant="secondary" size="sm">
+                Carteira por Profits
+              </Button>
+            </Link>
+            <Link to="/profits">
+              <Button variant="ghost" size="sm">
+                Indicadores Profits
+              </Button>
+            </Link>
+            <Link to="/performance">
+              <Button variant="ghost" size="sm">
+                Performance
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -203,18 +241,55 @@ function CarteiraProfitsPage() {
         {/* Filtros */}
         <Card>
           <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-            <FilterSelect label="Profit" value={profitFilter} onChange={setProfitFilter} options={opts.profit} />
-            <FilterSelect label="Franquia" value={franquiaFilter} onChange={setFranquiaFilter} options={opts.franquia} />
-            <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={opts.status} />
-            <FilterSelect label="Tipo Contrato" value={tipoFilter} onChange={setTipoFilter} options={opts.tipo} />
-            <FilterSelect label="Vencimento" value={faixaFilter} onChange={setFaixaFilter} options={opts.faixa} />
+            <FilterSelect
+              label="Profit"
+              value={profitFilter}
+              onChange={setProfitFilter}
+              options={opts.profit}
+            />
+            <FilterSelect
+              label="Franquia"
+              value={franquiaFilter}
+              onChange={setFranquiaFilter}
+              options={opts.franquia}
+            />
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={opts.status}
+            />
+            <FilterSelect
+              label="Tipo Contrato"
+              value={tipoFilter}
+              onChange={setTipoFilter}
+              options={opts.tipo}
+            />
+            <FilterSelect
+              label="Vencimento"
+              value={faixaFilter}
+              onChange={setFaixaFilter}
+              options={opts.faixa}
+            />
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Início a partir de</label>
-              <Input type="date" value={inicioDe} onChange={(e) => setInicioDe(e.target.value)} className="h-9 w-[160px]" />
+              <label className="text-xs font-medium text-muted-foreground">
+                Início a partir de
+              </label>
+              <Input
+                type="date"
+                value={inicioDe}
+                onChange={(e) => setInicioDe(e.target.value)}
+                className="h-9 w-[160px]"
+              />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">Fim até</label>
-              <Input type="date" value={fimAte} onChange={(e) => setFimAte(e.target.value)} className="h-9 w-[160px]" />
+              <Input
+                type="date"
+                value={fimAte}
+                onChange={(e) => setFimAte(e.target.value)}
+                className="h-9 w-[160px]"
+              />
             </div>
             <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
               Limpar filtros
@@ -224,18 +299,45 @@ function CarteiraProfitsPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          <Kpi label="Total de Profits" value={totalProfits} accent="oklch(0.6 0.2 250)" icon={<Users className="h-4 w-4" />} />
-          <Kpi label="MRR Total" value={brl(totalMrr)} accent="oklch(0.65 0.18 180)" icon={<DollarSign className="h-4 w-4" />} tooltip="Soma do MRR de todos os clientes ativos, agregado por Profit." />
-          <Kpi label="Receita média por Profit" value={brl(receitaMediaPorProfit)} accent="oklch(0.7 0.18 145)" tooltip="MRR total dividido pelo número de Profits." />
-          <Kpi label="Ticket Médio" value={brl(ticketMedioGeral)} accent="oklch(0.78 0.15 80)" tooltip="MRR total dividido pelo total de clientes ativos." />
-          <Kpi label="Clientes por Profit" value={clientesMediosPorProfit.toFixed(1)} accent="oklch(0.6 0.22 310)" />
+          <Kpi
+            label="Total de Profits"
+            value={totalProfits}
+            accent="oklch(0.6 0.2 250)"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <Kpi
+            label="MRR Total"
+            value={brl(totalMrr)}
+            accent="oklch(0.65 0.18 180)"
+            icon={<DollarSign className="h-4 w-4" />}
+            tooltip="Soma do MRR de todos os clientes ativos, agregado por Profit."
+          />
+          <Kpi
+            label="Receita média por Profit"
+            value={brl(receitaMediaPorProfit)}
+            accent="oklch(0.7 0.18 145)"
+            tooltip="MRR total dividido pelo número de Profits."
+          />
+          <Kpi
+            label="Ticket Médio"
+            value={brl(ticketMedioGeral)}
+            accent="oklch(0.78 0.15 80)"
+            tooltip="MRR total dividido pelo total de clientes ativos."
+          />
+          <Kpi
+            label="Clientes por Profit"
+            value={clientesMediosPorProfit.toFixed(1)}
+            accent="oklch(0.6 0.22 310)"
+          />
           <Kpi label="Total de Clientes" value={totalClientes.toLocaleString("pt-BR")} />
         </div>
 
         {/* Charts row 1 */}
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">MRR por Profit</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">MRR por Profit</CardTitle>
+            </CardHeader>
             <CardContent className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 72 }}>
@@ -244,7 +346,12 @@ function CarteiraProfitsPage() {
                   <YAxis type="category" dataKey="profit" width={130} fontSize={11} />
                   <Tooltip formatter={(v: number) => brlFull(v)} />
                   <Bar dataKey="mrr" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]} name="MRR">
-                    <LabelList dataKey="mrr" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
+                    <LabelList
+                      dataKey="mrr"
+                      position="right"
+                      fontSize={11}
+                      formatter={(v: number) => brl(v)}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -252,7 +359,9 @@ function CarteiraProfitsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Participação (MRR)</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Participação (MRR)</CardTitle>
+            </CardHeader>
             <CardContent className="h-[360px]">
               {participacao.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -261,7 +370,13 @@ function CarteiraProfitsPage() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={participacao} dataKey="value" nameKey="name" outerRadius={110} label={(e) => `${((e.percent ?? 0) * 100).toFixed(0)}%`}>
+                    <Pie
+                      data={participacao}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={110}
+                      label={(e) => `${((e.percent ?? 0) * 100).toFixed(0)}%`}
+                    >
                       {participacao.map((_, i) => (
                         <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                       ))}
@@ -278,7 +393,9 @@ function CarteiraProfitsPage() {
         {/* Charts row 2 */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-base">Clientes Ativos (MRR + TCV) por Profit</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Clientes Ativos (MRR + TCV) por Profit</CardTitle>
+            </CardHeader>
             <CardContent className="h-[380px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 48 }}>
@@ -287,7 +404,12 @@ function CarteiraProfitsPage() {
                   <YAxis type="category" dataKey="profit" width={130} fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="totalAtivos" name="Clientes Ativos" fill="oklch(0.7 0.18 145)" radius={[0, 4, 4, 0]}>
+                  <Bar
+                    dataKey="totalAtivos"
+                    name="Clientes Ativos"
+                    fill="oklch(0.7 0.18 145)"
+                    radius={[0, 4, 4, 0]}
+                  >
                     <LabelList dataKey="totalAtivos" position="right" fontSize={11} />
                   </Bar>
                 </BarChart>
@@ -296,7 +418,9 @@ function CarteiraProfitsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Ticket Médio (MRR) por Profit</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Ticket Médio (MRR) por Profit</CardTitle>
+            </CardHeader>
             <CardContent className="h-[380px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={porProfit} layout="vertical" margin={{ left: 12, right: 72 }}>
@@ -304,8 +428,18 @@ function CarteiraProfitsPage() {
                   <XAxis type="number" fontSize={11} tickFormatter={(v) => brl(v)} />
                   <YAxis type="category" dataKey="profit" width={130} fontSize={11} />
                   <Tooltip formatter={(v: number) => brlFull(v)} />
-                  <Bar dataKey="ticketMedioMRR" fill="oklch(0.78 0.15 80)" radius={[0, 4, 4, 0]} name="Ticket Médio">
-                    <LabelList dataKey="ticketMedioMRR" position="right" fontSize={11} formatter={(v: number) => brl(v)} />
+                  <Bar
+                    dataKey="ticketMedioMRR"
+                    fill="oklch(0.78 0.15 80)"
+                    radius={[0, 4, 4, 0]}
+                    name="Ticket Médio"
+                  >
+                    <LabelList
+                      dataKey="ticketMedioMRR"
+                      position="right"
+                      fontSize={11}
+                      formatter={(v: number) => brl(v)}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -337,12 +471,22 @@ function CarteiraProfitsPage() {
                   return (
                     <TableRow key={p.profit}>
                       <TableCell className="font-medium">{p.profit}</TableCell>
-                      <TableCell className="text-right tabular-nums">{p.clientes.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell className="text-right tabular-nums">{(p.ativosMRR + p.ativosTCV).toLocaleString("pt-BR")}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {p.clientes.toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {(p.ativosMRR + p.ativosTCV).toLocaleString("pt-BR")}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">{brl(p.mrr)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(p.ticketMedioMRR)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{brl(p.ticketMedioTCV)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">{part.toFixed(1)}%</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {brl(p.ticketMedioMRR)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {brl(p.ticketMedioTCV)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {part.toFixed(1)}%
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -356,7 +500,11 @@ function CarteiraProfitsPage() {
 }
 
 function Kpi({
-  label, value, accent, icon, tooltip,
+  label,
+  value,
+  accent,
+  icon,
+  tooltip,
 }: {
   label: string;
   value: React.ReactNode;
@@ -368,7 +516,10 @@ function Kpi({
     <Card>
       <CardContent className="pt-5">
         <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold tracking-tight" style={accent ? { color: accent } : undefined}>
+          <div
+            className="text-2xl font-bold tracking-tight"
+            style={accent ? { color: accent } : undefined}
+          >
             {value}
           </div>
           {icon && <div className="text-muted-foreground">{icon}</div>}
@@ -398,16 +549,20 @@ function Kpi({
 }
 
 function FilterSelect({
-  label, value, onChange, options,
-}: { label: string; value: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+}) {
   const toggle = (opt: string) =>
     onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
   const display =
-    value.length === 0
-      ? "Todos"
-      : value.length === 1
-        ? value[0]
-        : `${value.length} selecionados`;
+    value.length === 0 ? "Todos" : value.length === 1 ? value[0] : `${value.length} selecionados`;
   return (
     <div className="flex min-w-[180px] flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -421,7 +576,11 @@ function FilterSelect({
         <PopoverContent align="start" className="w-64 p-0">
           <div className="flex items-center justify-between border-b px-3 py-2 text-xs">
             <span className="font-medium">{label}</span>
-            <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => onChange([])}>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => onChange([])}
+            >
               Limpar
             </button>
           </div>

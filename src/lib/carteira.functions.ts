@@ -40,8 +40,7 @@ export const getCarteira = createServerFn({ method: "GET" }).handler(
       const raw = (r.StatusRoas ?? "").toString().trim();
       const status: CarteiraRow["statusRoas"] =
         raw === "No Alvo" ? "No Alvo" : raw === "Fora" ? "Fora" : "Sem Dado";
-      const toNum = (v: unknown) =>
-        v === null || v === undefined || v === "" ? null : Number(v);
+      const toNum = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
       return {
         profit: r.Profit ?? "—",
         franquia: r.Franquia ?? "—",
