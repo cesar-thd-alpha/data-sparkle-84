@@ -26,10 +26,16 @@ function sobContratoEm(d: ClienteRow, atMs: number): boolean {
   return isNaN(fim) || fim >= atMs;
 }
 
+/**
+ * Usa `dataChurn` (data exata do evento), não `fimContrato` — mesma escolha
+ * feita em src/routes/index.tsx no merge de 2026-07-08. `fimContrato` é a
+ * data de encerramento do contrato, nem sempre igual à data em que o
+ * cliente efetivamente saiu; `dataChurn` é o campo dedicado para isso.
+ */
 function churnNoPeriodo(d: ClienteRow, startMs: number, endMs: number): boolean {
-  if (!d.churn || !d.fimContrato) return false;
-  const fim = new Date(d.fimContrato).getTime();
-  return !isNaN(fim) && fim >= startMs && fim <= endMs;
+  if (!d.churn || !d.dataChurn) return false;
+  const t = new Date(d.dataChurn).getTime();
+  return !isNaN(t) && t >= startMs && t <= endMs;
 }
 
 /**
