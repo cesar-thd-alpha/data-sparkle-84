@@ -151,7 +151,20 @@ function CarteiraDashboard() {
   const ativos = filtered.filter((d) => d.ativo).length;
   const ativosTCV = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() != "MENSAL").length;
   const ativosMRR = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").length;
-  const churn = filtered.filter((d) => d.churn).length;
+  const totalMRR = filtered.filter((d) => d.tipoContrato.toUpperCase() == "MENSAL").length;
+  const totalTCV = filtered.filter((d) => d.tipoContrato.toUpperCase() != "MENSAL").length;
+  const churn = refBounds ? data.filter(
+    (d) =>
+      d.churn &&
+      d.dataChurn &&
+      (() => {
+        const t = new Date(d.dataChurn).getTime();
+        return t >= refBounds!.start && t <= refBounds!.end;
+      })()
+  ).length
+    :
+    data.filter((d) => d.churn).length;
+
   const pausados = filtered.filter((d) => d.pausado).length;
   const franquias = new Set(filtered.map((d) => d.franquia)).size;
   const mrr = filtered.filter((d) => d.ativo && d.tipoContrato.toUpperCase() == "MENSAL").reduce((s, d) => s + (d.valorMensal ?? 0), 0);
@@ -436,53 +449,108 @@ function CarteiraDashboard() {
         </Card>
 
         {/* KPIs — Row 1: financeiro */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+        {/* Receita */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
-            label="MRR (Receita Recorrente)"
+            label="MRR"
             value={brl(mrr)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do MRR de Todos os Clientes Ativos com Contrato Mensal"
+            detail={`${ativosMRR} clientes mensais`}
+            tooltip="Receita recorrente mensal dos clientes ativos."
           />
+
           <Kpi
             icon={<DollarSign className="h-4 w-4" />}
-            label="Valor Contratado TCV"
+            label="Valor Contratado (TCV)"
             value={brl(contratoTCV)}
             accent="oklch(0.6 0.2 250)"
-            tooltip="Soma do Valor Contratado de Todos os Clientes TCV Ativos"
+            detail={`${ativosTCV} contratos TCV`}
+            tooltip="Valor total contratado dos clientes ativos com contratos TCV."
           />
+
           <Kpi
-            label="Lifetime Médio"
-            value={`${lifetimeMedio.toFixed(1)} meses`}
-            accent="oklch(0.65 0.18 180)"
-          />
-          <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
             label="Ticket Médio MRR"
             value={brl(ticketMedio)}
             accent="oklch(0.7 0.18 145)"
-            tooltip="Soma do MRR dos Clientes (mensais) Ativos divido por Qtd de Clientes (mensais) Ativos"
+            detail="Clientes mensais"
+            tooltip="MRR dividido pela quantidade de clientes mensais ativos."
           />
+
           <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
             label="Ticket Médio TCV"
             value={brl(ticketMedioTCV)}
             accent="oklch(0.7 0.18 145)"
-            tooltip="Soma do MRR dos Clientes (NÃO mensais) Ativos divido por Qtd de Clientes (NÃO mensais) Ativos"
-          />
-          <Kpi
-            label="Churn Rate"
-            value={`${churnRate.toFixed(1)}%`}
-            accent={churnRate > 5 ? "oklch(0.6 0.22 25)" : "oklch(0.7 0.18 145)"}
-            tooltip="Qtd Clientes Churn dividido por Total de Clientes (Ativos, Pausados e Churn)"
+            detail="Contratos TCV"
+            tooltip="Valor contratado dividido pela quantidade de contratos TCV ativos."
           />
         </div>
 
-        {/* KPIs — Row 2: carteira */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
-          <Kpi icon={<Users className="h-4 w-4" />} label="Total de Clientes" value={totalClientes} />
-          <Kpi label="Ativos" value={<span className="inline-flex items-center gap-2">🟢 {ativos}</span>} accent="oklch(0.7 0.18 145)" />
-          <Kpi label="Churn" value={<span className="inline-flex items-center gap-2">🔴 {churn}</span>} accent="oklch(0.6 0.22 25)" />
-          <Kpi label="Pausados" value={<span className="inline-flex items-center gap-2">🟡 {pausados}</span>} accent="oklch(0.78 0.15 80)" />
-          <Kpi icon={<Building2 className="h-4 w-4" />} label="Franquias" value={franquias} />
+        {/* Carteira */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 mt-4">
+          <Kpi
+            icon={<Users className="h-4 w-4" />}
+            label="Total de Clientes"
+            value={totalClientes}
+            detail={`${totalMRR} Mensais • ${totalTCV} TCV`}
+          />
+
+          <Kpi
+            icon={<Check className="h-4 w-4" />}
+            label="Ativos"
+            value={ativos}
+            accent="oklch(0.7 0.18 145)"
+            detail={`${ativosMRR} Mensais • ${ativosTCV} TCV`}
+          />
+
+          <Kpi
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Churn"
+            value={churn}
+            accent="oklch(0.6 0.22 25)"
+            detail={`${churnRate.toFixed(1)}% da carteira`}
+          />
+
+          <Kpi
+            icon={<ArrowUpDown className="h-4 w-4" />}
+            label="Pausados"
+            value={pausados}
+            accent="oklch(0.78 0.15 80)"
+            detail={`${((pausados / Math.max(totalClientes, 1)) * 100).toFixed(1)}% da carteira`}
+          />
+
+          <Kpi
+            icon={<Building2 className="h-4 w-4" />}
+            label="Franquias"
+            value={franquias}
+            detail={`${(totalClientes / Math.max(franquias, 1)).toFixed(1)} clientes/franquia`}
+          />
+        </div>
+
+        {/* Saúde da carteira */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-2 mt-4">
+          <Kpi
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Lifetime Médio"
+            value={`${lifetimeMedio.toFixed(1)} meses`}
+            accent="oklch(0.65 0.18 180)"
+            detail="Tempo médio de permanência"
+          />
+
+          <Kpi
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Churn Rate"
+            value={`${churnRate.toFixed(1)}%`}
+            accent={
+              churnRate > 5
+                ? "oklch(0.6 0.22 25)"
+                : "oklch(0.7 0.18 145)"
+            }
+            detail="Clientes perdidos no período"
+            tooltip="Quantidade de clientes em churn dividida pelo total de clientes."
+          />
         </div>
 
         {/* Alertas */}
@@ -878,15 +946,20 @@ function Kpi({
   accent,
   icon,
   tooltip,
+  detail
 }: {
   label: string;
   value: React.ReactNode;
   accent?: string;
   icon?: React.ReactNode;
   tooltip?: string;
+  detail?: string;
 }) {
   return (
-    <Card>
+    <Card
+      className="hover:shadow-lg transition-all duration-200"
+      style={accent ? { borderLeft: `4px solid ${accent}` } : undefined}
+    >
       <CardContent className="pt-5">
         <div className="flex items-center justify-between">
           <div
@@ -898,6 +971,7 @@ function Kpi({
 
           {icon && <div className="text-muted-foreground">{icon}</div>}
         </div>
+        <span className="font-semibold text-xs text-gray-500">{detail ?? "."}</span>
 
         <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
           <span className="flex items-center justify-between">
