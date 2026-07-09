@@ -369,6 +369,7 @@ function CarteiraPage() {
     setProfitFilter(ALL);
     setFranquiaFilter(ALL);
     setStatusFilter(ALL);
+    setSemanaFilter(ALL);
     setSortKey(null);
   };
 
