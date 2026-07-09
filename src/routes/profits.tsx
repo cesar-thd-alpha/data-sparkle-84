@@ -600,6 +600,127 @@ function CarteiraPage() {
             </Card>
           </div>
 
+          {/* ============ Métricas por Profit ============ */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+              <div>
+                <CardTitle className="text-base">Métricas por Profit</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {semanaFilter === ALL
+                    ? "Média das semanas disponíveis."
+                    : `Filtrado por: ${semanaFilter}.`}
+                  {metricaSelectedMeta.meta && ` Meta: ${metricaSelectedMeta.meta}.`}
+                  {metricaSelectedMeta.cadencia && ` Cadência: ${metricaSelectedMeta.cadencia}.`}
+                </p>
+              </div>
+              <div className="min-w-[260px]">
+                <Select value={metricaFilter} onValueChange={setMetricaFilter}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione a métrica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metricasOpts.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="h-[360px]">
+              {metricaSelectedRows.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Sem dados para esta métrica no filtro atual.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={metricaSelectedRows}
+                    layout="vertical"
+                    margin={{ left: 12, right: 64 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      fontSize={11}
+                      tickFormatter={(v) =>
+                        fmtMetricValue(v as number, metricaSelectedMeta.isPercentual)
+                      }
+                    />
+                    <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
+                    <Tooltip
+                      formatter={(v: number) =>
+                        fmtMetricValue(v, metricaSelectedMeta.isPercentual)
+                      }
+                    />
+                    <Bar dataKey="valor" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]}>
+                      <LabelList
+                        dataKey="valor"
+                        position="right"
+                        fontSize={11}
+                        formatter={(v: number) =>
+                          fmtMetricValue(v, metricaSelectedMeta.isPercentual)
+                        }
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Matriz de Métricas ({matrixProfits.length} profits × {metricasOpts.length}{" "}
+                métricas)
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {semanaFilter === ALL
+                  ? "Valores exibidos são a média das semanas."
+                  : `Valores da ${semanaFilter}.`}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-background">Profit</TableHead>
+                      {metricasOpts.map((m) => (
+                        <TableHead key={m} className="text-right whitespace-nowrap">
+                          {m}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {matrixProfits.map((p) => (
+                      <TableRow key={p}>
+                        <TableCell className="sticky left-0 bg-background font-medium">
+                          {p}
+                        </TableCell>
+                        {metricasOpts.map((m) => {
+                          const cell = metricasAgg.find((r) => r.profit === p && r.metrica === m);
+                          const isPct = cell?.isPercentual ?? false;
+                          return (
+                            <TableCell
+                              key={m}
+                              className="text-right tabular-nums whitespace-nowrap"
+                            >
+                              {cell ? fmtMetricValue(cell.valor, isPct) : "—"}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Detalhamento ({sortedRows.length})</CardTitle>
