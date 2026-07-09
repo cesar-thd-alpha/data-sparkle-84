@@ -15,7 +15,12 @@ import {
   Cell,
 } from "recharts";
 import { ArrowUpDown, AlertTriangle } from "lucide-react";
-import { getCarteira, type CarteiraRow } from "@/lib/carteira.functions";
+import {
+  getCarteira,
+  getMetricasProfits,
+  type CarteiraRow,
+  type MetricaRow,
+} from "@/lib/carteira.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +52,11 @@ const carteiraQuery = queryOptions({
   queryFn: () => getCarteira(),
 });
 
+const metricasQuery = queryOptions({
+  queryKey: ["indicadores-profits-metricas"],
+  queryFn: () => getMetricasProfits(),
+});
+
 export const Route = createFileRoute("/profits")({
   head: () => ({
     meta: [
@@ -54,7 +64,10 @@ export const Route = createFileRoute("/profits")({
       { name: "description", content: "Distribuição de clientes por Profit e Franquia." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(carteiraQuery),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(carteiraQuery);
+    context.queryClient.ensureQueryData(metricasQuery);
+  },
   errorComponent: ({ error }) => (
     <div className="p-8 text-destructive">Erro ao carregar dados: {error.message}</div>
   ),
