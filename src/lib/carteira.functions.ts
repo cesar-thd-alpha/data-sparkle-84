@@ -21,7 +21,7 @@ export const getCarteira = createServerFn({ method: "GET" }).handler(
       await client.connect();
       try {
         return await client.query(
-          `SELECT "Profit","Franquia","Clientes","RoasMedio","AlvoRoas","StatusRoas","DesvioRoas" FROM carteira_clientes_profit`,
+          `SELECT "Profit","Franquia","Clientes","RoasMedio","AlvoRoas","StatusRoas","DesvioRoas" FROM indicadores_profits`,
         );
       } finally {
         await client.end().catch(() => {});
@@ -51,5 +51,57 @@ export const getCarteira = createServerFn({ method: "GET" }).handler(
         desvioRoas: toNum(r.DesvioRoas),
       };
     });
+  },
+);
+
+export type MetricaRow = {
+  profit: string;
+  metrica: string;
+  cadencia: string;
+  meta: string;
+  semanaLabel: string;
+  semanaNumero: number;
+  semanaData: string | null;
+  valorNumerico: number | null;
+  isPercentual: boolean;
+};
+
+export const getMetricasProfits = createServerFn({ method: "GET" }).handler(
+  async (): Promise<MetricaRow[]> => {
+    const connectionString = process.env.RAILWAY_DATABASE_URL;
+    if (!connectionString) throw new Error("RAILWAY_DATABASE_URL not set");
+
+    async function run(ssl: false | { rejectUnauthorized: false }) {
+      const client = new Client({ connectionString, ssl, keepAlive: false });
+      await client.connect();
+      try {
+        return await client.query(
+          `SELECT "Profit","Metrica","Cadencia","Meta","SemanaLabel","SemanaNumero","SemanaData","ValorNumerico","IsPercentual" FROM indicadores_profits_metricas`,
+        );
+      } finally {
+        await client.end().catch(() => {});
+      }
+    }
+
+    let result;
+    try {
+      result = await run({ rejectUnauthorized: false });
+    } catch (e) {
+      console.warn("[getMetricasProfits] SSL failed, retrying:", (e as Error).message);
+      result = await run(false);
+    }
+
+    return result.rows.map((r) => ({
+      profit: r.Profit ?? "—",
+      metrica: r.Metrica ?? "—",
+      cadencia: r.Cadencia ?? "",
+      meta: r.Meta ?? "",
+      semanaLabel: r.SemanaLabel ?? "",
+      semanaNumero: Number(r.SemanaNumero ?? 0),
+      semanaData: r.SemanaData ?? null,
+      valorNumerico:
+        r.ValorNumerico === null || r.ValorNumerico === undefined ? null : Number(r.ValorNumerico),
+      isPercentual: Boolean(r.IsPercentual),
+    }));
   },
 );

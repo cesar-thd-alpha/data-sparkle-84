@@ -15,7 +15,12 @@ import {
   Cell,
 } from "recharts";
 import { ArrowUpDown, AlertTriangle } from "lucide-react";
-import { getCarteira, type CarteiraRow } from "@/lib/carteira.functions";
+import {
+  getCarteira,
+  getMetricasProfits,
+  type CarteiraRow,
+  type MetricaRow,
+} from "@/lib/carteira.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +52,11 @@ const carteiraQuery = queryOptions({
   queryFn: () => getCarteira(),
 });
 
+const metricasQuery = queryOptions({
+  queryKey: ["indicadores-profits-metricas"],
+  queryFn: () => getMetricasProfits(),
+});
+
 export const Route = createFileRoute("/profits")({
   head: () => ({
     meta: [
@@ -54,7 +64,10 @@ export const Route = createFileRoute("/profits")({
       { name: "description", content: "Distribuição de clientes por Profit e Franquia." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(carteiraQuery),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(carteiraQuery);
+    context.queryClient.ensureQueryData(metricasQuery);
+  },
   errorComponent: ({ error }) => (
     <div className="p-8 text-destructive">Erro ao carregar dados: {error.message}</div>
   ),
@@ -136,10 +149,13 @@ function RowTooltipContent({ d }: { d: CarteiraRow }) {
 
 function CarteiraPage() {
   const { data } = useSuspenseQuery(carteiraQuery);
+  const { data: metricas } = useSuspenseQuery(metricasQuery);
 
   const [profitFilter, setProfitFilter] = useState<string>(ALL);
   const [franquiaFilter, setFranquiaFilter] = useState<string>(ALL);
   const [statusFilter, setStatusFilter] = useState<string>(ALL);
+  const [semanaFilter, setSemanaFilter] = useState<string>(ALL);
+  const [metricaFilter, setMetricaFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -224,6 +240,94 @@ function CarteiraPage() {
     return alvos.length ? alvos.reduce((s, v) => s + v, 0) / alvos.length : 0;
   }, [filtered]);
 
+  // ============ Métricas (indicadores_profits_metricas) ============
+  const semanasOpts = useMemo(() => {
+    const map = new Map<string, number>();
+    metricas.forEach((m) => {
+      if (m.semanaLabel) map.set(m.semanaLabel, m.semanaNumero);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+      .map(([label]) => label);
+  }, [metricas]);
+
+  const metricasOpts = useMemo(
+    () => Array.from(new Set(metricas.map((m) => m.metrica))).sort(),
+    [metricas],
+  );
+
+  React.useEffect(() => {
+    if (metricaFilter === "" && metricasOpts.length > 0) setMetricaFilter(metricasOpts[0]);
+  }, [metricaFilter, metricasOpts]);
+
+  // Filter by Profit (reuse profitFilter) and Semana; aggregate: average by (profit, metrica) across the selected weeks
+  const metricasFiltered = useMemo(() => {
+    return metricas.filter(
+      (m) =>
+        (profitFilter === ALL || m.profit === profitFilter) &&
+        (semanaFilter === ALL || m.semanaLabel === semanaFilter),
+    );
+  }, [metricas, profitFilter, semanaFilter]);
+
+  // Aggregation: mean of ValorNumerico for each (profit, metrica) across the filtered weeks.
+  // When semanaFilter === ALL, this is the average across all weeks.
+  const metricasAgg = useMemo(() => {
+    const key = (p: string, m: string) => `${p}||${m}`;
+    const map = new Map<
+      string,
+      { profit: string; metrica: string; sum: number; count: number; isPercentual: boolean }
+    >();
+    metricasFiltered.forEach((m) => {
+      if (m.valorNumerico === null) return;
+      const k = key(m.profit, m.metrica);
+      const cur = map.get(k) ?? {
+        profit: m.profit,
+        metrica: m.metrica,
+        sum: 0,
+        count: 0,
+        isPercentual: m.isPercentual,
+      };
+      cur.sum += m.valorNumerico;
+      cur.count += 1;
+      map.set(k, cur);
+    });
+    return Array.from(map.values()).map((v) => ({
+      profit: v.profit,
+      metrica: v.metrica,
+      valor: v.count > 0 ? v.sum / v.count : 0,
+      count: v.count,
+      isPercentual: v.isPercentual,
+    }));
+  }, [metricasFiltered]);
+
+  const metricaSelectedRows = useMemo(
+    () =>
+      metricasAgg
+        .filter((r) => r.metrica === metricaFilter)
+        .sort((a, b) => b.valor - a.valor),
+    [metricasAgg, metricaFilter],
+  );
+
+  const metricaSelectedMeta = useMemo(() => {
+    const r = metricas.find((m) => m.metrica === metricaFilter);
+    return {
+      meta: r?.meta ?? "",
+      cadencia: r?.cadencia ?? "",
+      isPercentual: metricaSelectedRows[0]?.isPercentual ?? false,
+    };
+  }, [metricas, metricaFilter, metricaSelectedRows]);
+
+  const fmtMetricValue = (v: number, isPct: boolean) =>
+    isPct
+      ? `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
+      : v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
+  // Matrix rows: profit × metric average
+  const matrixProfits = useMemo(
+    () => Array.from(new Set(metricasAgg.map((r) => r.profit))).sort(),
+    [metricasAgg],
+  );
+
   const sortedRows = useMemo(() => {
     const rows = [...filtered];
     if (sortKey === null) {
@@ -265,6 +369,7 @@ function CarteiraPage() {
     setProfitFilter(ALL);
     setFranquiaFilter(ALL);
     setStatusFilter(ALL);
+    setSemanaFilter(ALL);
     setSortKey(null);
   };
 
@@ -324,6 +429,13 @@ function CarteiraPage() {
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={["No Alvo", "Fora", "Sem Dado"]}
+              />
+              <FilterSelect
+                label="Semana (métricas)"
+                value={semanaFilter}
+                onChange={setSemanaFilter}
+                options={semanasOpts}
+                allLabel="Média das semanas"
               />
               <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
                 Limpar filtros
@@ -488,6 +600,127 @@ function CarteiraPage() {
             </Card>
           </div>
 
+          {/* ============ Métricas por Profit ============ */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+              <div>
+                <CardTitle className="text-base">Métricas por Profit</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {semanaFilter === ALL
+                    ? "Média das semanas disponíveis."
+                    : `Filtrado por: ${semanaFilter}.`}
+                  {metricaSelectedMeta.meta && ` Meta: ${metricaSelectedMeta.meta}.`}
+                  {metricaSelectedMeta.cadencia && ` Cadência: ${metricaSelectedMeta.cadencia}.`}
+                </p>
+              </div>
+              <div className="min-w-[260px]">
+                <Select value={metricaFilter} onValueChange={setMetricaFilter}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione a métrica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metricasOpts.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="h-[360px]">
+              {metricaSelectedRows.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Sem dados para esta métrica no filtro atual.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={metricaSelectedRows}
+                    layout="vertical"
+                    margin={{ left: 12, right: 64 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      fontSize={11}
+                      tickFormatter={(v) =>
+                        fmtMetricValue(v as number, metricaSelectedMeta.isPercentual)
+                      }
+                    />
+                    <YAxis type="category" dataKey="profit" width={110} fontSize={11} />
+                    <Tooltip
+                      formatter={(v: number) =>
+                        fmtMetricValue(v, metricaSelectedMeta.isPercentual)
+                      }
+                    />
+                    <Bar dataKey="valor" fill="oklch(0.6 0.2 250)" radius={[0, 4, 4, 0]}>
+                      <LabelList
+                        dataKey="valor"
+                        position="right"
+                        fontSize={11}
+                        formatter={(v: number) =>
+                          fmtMetricValue(v, metricaSelectedMeta.isPercentual)
+                        }
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Matriz de Métricas ({matrixProfits.length} profits × {metricasOpts.length}{" "}
+                métricas)
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {semanaFilter === ALL
+                  ? "Valores exibidos são a média das semanas."
+                  : `Valores da ${semanaFilter}.`}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-background">Profit</TableHead>
+                      {metricasOpts.map((m) => (
+                        <TableHead key={m} className="text-right whitespace-nowrap">
+                          {m}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {matrixProfits.map((p) => (
+                      <TableRow key={p}>
+                        <TableCell className="sticky left-0 bg-background font-medium">
+                          {p}
+                        </TableCell>
+                        {metricasOpts.map((m) => {
+                          const cell = metricasAgg.find((r) => r.profit === p && r.metrica === m);
+                          const isPct = cell?.isPercentual ?? false;
+                          return (
+                            <TableCell
+                              key={m}
+                              className="text-right tabular-nums whitespace-nowrap"
+                            >
+                              {cell ? fmtMetricValue(cell.valor, isPct) : "—"}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Detalhamento ({sortedRows.length})</CardTitle>
@@ -638,11 +871,13 @@ function FilterSelect({
   value,
   onChange,
   options,
+  allLabel,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  allLabel?: string;
 }) {
   return (
     <div className="flex min-w-[200px] flex-col gap-1">
@@ -652,7 +887,7 @@ function FilterSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>Todos</SelectItem>
+          <SelectItem value={ALL}>{allLabel ?? "Todos"}</SelectItem>
           {options.map((o) => (
             <SelectItem key={o} value={o}>
               {o}
