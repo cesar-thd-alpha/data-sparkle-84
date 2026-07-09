@@ -149,10 +149,13 @@ function RowTooltipContent({ d }: { d: CarteiraRow }) {
 
 function CarteiraPage() {
   const { data } = useSuspenseQuery(carteiraQuery);
+  const { data: metricas } = useSuspenseQuery(metricasQuery);
 
   const [profitFilter, setProfitFilter] = useState<string>(ALL);
   const [franquiaFilter, setFranquiaFilter] = useState<string>(ALL);
   const [statusFilter, setStatusFilter] = useState<string>(ALL);
+  const [semanaFilter, setSemanaFilter] = useState<string>(ALL);
+  const [metricaFilter, setMetricaFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
