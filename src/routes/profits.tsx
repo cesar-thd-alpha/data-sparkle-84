@@ -240,6 +240,94 @@ function CarteiraPage() {
     return alvos.length ? alvos.reduce((s, v) => s + v, 0) / alvos.length : 0;
   }, [filtered]);
 
+  // ============ Métricas (indicadores_profits_metricas) ============
+  const semanasOpts = useMemo(() => {
+    const map = new Map<string, number>();
+    metricas.forEach((m) => {
+      if (m.semanaLabel) map.set(m.semanaLabel, m.semanaNumero);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+      .map(([label]) => label);
+  }, [metricas]);
+
+  const metricasOpts = useMemo(
+    () => Array.from(new Set(metricas.map((m) => m.metrica))).sort(),
+    [metricas],
+  );
+
+  React.useEffect(() => {
+    if (metricaFilter === "" && metricasOpts.length > 0) setMetricaFilter(metricasOpts[0]);
+  }, [metricaFilter, metricasOpts]);
+
+  // Filter by Profit (reuse profitFilter) and Semana; aggregate: average by (profit, metrica) across the selected weeks
+  const metricasFiltered = useMemo(() => {
+    return metricas.filter(
+      (m) =>
+        (profitFilter === ALL || m.profit === profitFilter) &&
+        (semanaFilter === ALL || m.semanaLabel === semanaFilter),
+    );
+  }, [metricas, profitFilter, semanaFilter]);
+
+  // Aggregation: mean of ValorNumerico for each (profit, metrica) across the filtered weeks.
+  // When semanaFilter === ALL, this is the average across all weeks.
+  const metricasAgg = useMemo(() => {
+    const key = (p: string, m: string) => `${p}||${m}`;
+    const map = new Map<
+      string,
+      { profit: string; metrica: string; sum: number; count: number; isPercentual: boolean }
+    >();
+    metricasFiltered.forEach((m) => {
+      if (m.valorNumerico === null) return;
+      const k = key(m.profit, m.metrica);
+      const cur = map.get(k) ?? {
+        profit: m.profit,
+        metrica: m.metrica,
+        sum: 0,
+        count: 0,
+        isPercentual: m.isPercentual,
+      };
+      cur.sum += m.valorNumerico;
+      cur.count += 1;
+      map.set(k, cur);
+    });
+    return Array.from(map.values()).map((v) => ({
+      profit: v.profit,
+      metrica: v.metrica,
+      valor: v.count > 0 ? v.sum / v.count : 0,
+      count: v.count,
+      isPercentual: v.isPercentual,
+    }));
+  }, [metricasFiltered]);
+
+  const metricaSelectedRows = useMemo(
+    () =>
+      metricasAgg
+        .filter((r) => r.metrica === metricaFilter)
+        .sort((a, b) => b.valor - a.valor),
+    [metricasAgg, metricaFilter],
+  );
+
+  const metricaSelectedMeta = useMemo(() => {
+    const r = metricas.find((m) => m.metrica === metricaFilter);
+    return {
+      meta: r?.meta ?? "",
+      cadencia: r?.cadencia ?? "",
+      isPercentual: metricaSelectedRows[0]?.isPercentual ?? false,
+    };
+  }, [metricas, metricaFilter, metricaSelectedRows]);
+
+  const fmtMetricValue = (v: number, isPct: boolean) =>
+    isPct
+      ? `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
+      : v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
+  // Matrix rows: profit × metric average
+  const matrixProfits = useMemo(
+    () => Array.from(new Set(metricasAgg.map((r) => r.profit))).sort(),
+    [metricasAgg],
+  );
+
   const sortedRows = useMemo(() => {
     const rows = [...filtered];
     if (sortKey === null) {
