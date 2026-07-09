@@ -750,11 +750,13 @@ function FilterSelect({
   value,
   onChange,
   options,
+  allLabel,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  allLabel?: string;
 }) {
   return (
     <div className="flex min-w-[200px] flex-col gap-1">
@@ -764,7 +766,7 @@ function FilterSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>Todos</SelectItem>
+          <SelectItem value={ALL}>{allLabel ?? "Todos"}</SelectItem>
           {options.map((o) => (
             <SelectItem key={o} value={o}>
               {o}
