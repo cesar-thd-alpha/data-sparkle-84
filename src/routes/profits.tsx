@@ -430,6 +430,13 @@ function CarteiraPage() {
                 onChange={setStatusFilter}
                 options={["No Alvo", "Fora", "Sem Dado"]}
               />
+              <FilterSelect
+                label="Semana (métricas)"
+                value={semanaFilter}
+                onChange={setSemanaFilter}
+                options={semanasOpts}
+                allLabel="Média das semanas"
+              />
               <Button variant="outline" size="sm" onClick={clearFilters} className="ml-auto">
                 Limpar filtros
               </Button>
