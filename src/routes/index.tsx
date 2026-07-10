@@ -465,7 +465,7 @@ function CarteiraDashboard() {
           (d) =>
             d.ativo &&
             d.vencimentoDias !== null &&
-            d.vencimentoDias <= 60 &&
+            d.vencimentoDias <= 30 &&
             d.renovacaoAuto !== "Sim",
         )
         .sort((a, b) => (a.vencimentoDias ?? 0) - (b.vencimentoDias ?? 0)),
@@ -967,7 +967,7 @@ function CarteiraDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-500" />
-              Contratos em risco (vencem em até 60 dias, sem renovação automática)
+              Contratos em risco (vencem em até 30 dias, sem renovação automática)
             </CardTitle>
           </CardHeader>
           <CardContent>
